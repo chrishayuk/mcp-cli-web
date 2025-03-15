@@ -101,21 +101,6 @@ body {
     overflow: hidden;
 }
 
-.terminal-content {
-    padding: 0.5rem;
-    flex: 1;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-}
-
-.terminal-output {
-    white-space: pre-wrap;
-    color: var(--text-green);
-    font-size: 0.85rem;
-}
-
 .canvas-titlebar {
     background-color: var(--bg-panel);
     padding: 0.3rem 0.5rem;
@@ -150,97 +135,6 @@ canvas {
     display: block;
 }
 
-.terminal-input {
-    display: flex;
-    align-items: center;
-    padding: 0.5rem;
-    border-top: 1px solid var(--border-color);
-    background-color: var(--bg-terminal);
-}
-
-.terminal-prompt {
-    color: var(--text-header);
-    margin-right: 0.5rem;
-}
-
-.terminal-input-field {
-    background-color: transparent;
-    border: none;
-    outline: none;
-    color: var(--text-green);
-    font-family: var(--font-mono);
-    font-size: 0.9rem;
-    flex: 1;
-    width: 100%;
-    padding: 0;
-}
-
-.terminal-caret {
-    display: inline-block;
-    width: 0.5em;
-    height: 1.2em;
-    background-color: var(--cursor-color);
-    animation: blink 1s step-end infinite;
-    opacity: 1;
-    margin-left: 2px;
-}
-
-@keyframes blink {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0; }
-}
-
-.command-section {
-    margin-bottom: 0.5rem;
-    border-top: 1px dashed var(--border-color);
-    padding-top: 0.5rem;
-}
-
-.command-section-header {
-    color: var(--text-header);
-    margin-bottom: 0.3rem;
-    font-weight: bold;
-    font-size: 0.85rem;
-}
-
-.command-buttons {
-    display: flex;
-    gap: 0.5rem;
-    margin-bottom: 0.5rem;
-    flex-wrap: wrap;
-}
-
-.terminal-button {
-    background-color: var(--bg-panel);
-    color: var(--text-green);
-    border: 1px solid var(--border-color);
-    border-radius: 2px;
-    padding: 0.3rem 0.5rem;
-    font-family: var(--font-mono);
-    font-size: 0.75rem;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-}
-
-.terminal-button:hover {
-    background-color: var(--border-color);
-    color: var(--text-header);
-}
-
-.terminal-button:active {
-    transform: translateY(1px);
-}
-
-.api-links {
-    display: flex;
-    gap: 0.5rem;
-    margin-top: 0.25rem;
-    flex-wrap: wrap;
-}
-
 .status {
     display: inline-flex;
     align-items: center;
@@ -258,44 +152,6 @@ canvas {
 
 .status.error {
     color: var(--text-error);
-}
-
-.loader {
-    display: none;
-    width: 0.75rem;
-    height: 0.75rem;
-    border: 2px solid rgba(15, 255, 15, 0.3);
-    border-radius: 50%;
-    border-top-color: var(--text-green);
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    to { transform: rotate(360deg); }
-}
-
-.loading .loader {
-    display: inline-block;
-}
-
-.loading .button-text {
-    display: none;
-}
-
-.terminal-line {
-    display: flex;
-    margin-bottom: 0.3rem;
-}
-
-.response-data {
-    background-color: rgba(0, 0, 0, 0.3);
-    padding: 0.5rem;
-    border-radius: 2px;
-    border-left: 2px solid var(--text-dim);
-    overflow-x: auto;
-    max-height: 150px;
-    overflow-y: auto;
-    font-size: 0.85rem;
 }
 
 .terminal-scanlines {
@@ -353,6 +209,30 @@ canvas {
     flex-direction: column;
     gap: 0.5rem;
     z-index: 10;
+}
+
+.terminal-button {
+    background-color: var(--bg-panel);
+    color: var(--text-green);
+    border: 1px solid var(--border-color);
+    border-radius: 2px;
+    padding: 0.3rem 0.5rem;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.terminal-button:hover {
+    background-color: var(--border-color);
+    color: var(--text-header);
+}
+
+.terminal-button:active {
+    transform: translateY(1px);
 }
 
 .canvas-controls .terminal-button {

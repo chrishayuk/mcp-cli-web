@@ -5,112 +5,110 @@
  * and sets up the command processor
  */
 
+// Global safety check to prevent script errors
+function safeGetElement(id) {
+    const element = document.getElementById(id);
+    if (!element) {
+        console.warn(`Element not found: #${id}, creating dummy`);
+        const dummy = document.createElement('div');
+        dummy.id = id;
+        dummy.style.display = 'none';
+        dummy.addEventListener = function() {}; // Empty function
+        document.body.appendChild(dummy);
+        return dummy;
+    }
+    return element;
+}
+
 // Make sure we expose the Commands object globally
-let Commands;
+window.Commands = null;
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log('Terminal Canvas initialized');
     
-    // Initialize canvas manager
-    const canvasManager = new CanvasManager();
-    
-    // Register modules
-    canvasManager
-        .registerModule('image', new ImageModule())
-        .registerModule('chart', new ChartModule())
-        .registerModule('code', new CodeModule())
-        .registerModule('shape', new ShapeModule());
-    
-    // Initialize command processor with canvas manager and make it global
-    window.Commands = new CommandProcessor(canvasManager);
-    Commands = window.Commands; // Ensure it's available in this scope too
-    
-    // Activate shape module by default
-    canvasManager.activateModule('shape');
-    
-    // Set initial memory usage display
-    const memoryUsage = document.getElementById('memoryUsage');
-    if (memoryUsage) {
-        memoryUsage.textContent = Math.floor(Math.random() * 1000 + 2000);
-    }
-    
-    // Draw a welcome pattern after a short delay
-    setTimeout(() => {
-        // Draw a terminal-style pattern
+    try {
+        // Initialize canvas manager with error handling
+        const canvasManager = new CanvasManager();
+        
+        // Register modules with error handling
         try {
-            canvasManager.getModule('shape').handleCommand('pattern', ['grid']);
-            terminal.addOutput('[INFO] Welcome pattern generated. Type "help" for available commands');
-        } catch (error) {
-            console.error('Error generating welcome pattern:', error);
-            terminal.addOutput('[ERROR] Could not generate welcome pattern. Type "help" for available commands');
+            canvasManager
+                .registerModule('image', new ImageModule())
+                .registerModule('chart', new ChartModule())
+                .registerModule('code', new CodeModule())
+                .registerModule('shape', new ShapeModule());
+        } catch (e) {
+            console.error('Error registering modules:', e);
         }
-    }, 500);
-    
-    // Initialize event handlers for existing DOM elements directly
-    initializeUIHandlers(canvasManager);
+        
+        // Initialize command processor with canvas manager and make it global
+        try {
+            window.Commands = new CommandProcessor(canvasManager);
+        } catch (e) {
+            console.error('Error initializing command processor:', e);
+            // Create a basic command processor if needed
+            window.Commands = {
+                processCommand: function(cmd) {
+                    console.log('Processing command:', cmd);
+                    if (cmd.startsWith('fetch image')) {
+                        canvasManager.activateModule('image');
+                        const imageUrl = cmd.replace('fetch image', '').trim() || null;
+                        canvasManager.getModule('image').handleCommand('display', [imageUrl]);
+                    } else if (cmd.startsWith('chart')) {
+                        canvasManager.activateModule('chart');
+                        const chartType = cmd.split(' ')[1] || 'bar';
+                        canvasManager.getModule('chart').handleCommand(chartType);
+                    } else if (cmd.startsWith('draw')) {
+                        canvasManager.activateModule('shape');
+                        canvasManager.getModule('shape').handleCommand('random');
+                    } else if (cmd === 'clear canvas') {
+                        canvasManager.clearCanvas();
+                    }
+                    return true;
+                }
+            };
+        }
+        
+        // Activate shape module by default
+        try {
+            canvasManager.activateModule('shape');
+        } catch (e) {
+            console.error('Error activating shape module:', e);
+        }
+        
+        // Set initial memory usage display
+        const memoryUsage = safeGetElement('memoryUsage');
+        memoryUsage.textContent = Math.floor(Math.random() * 1000 + 2000);
+        
+        // Update memory display periodically
+        setInterval(() => {
+            memoryUsage.textContent = Math.floor(Math.random() * 1000 + 2000);
+        }, 5000);
+        
+        // Update clock in status bar
+        function updateClock() {
+            const now = new Date();
+            const time = now.toTimeString().split(' ')[0];
+            const currentTime = safeGetElement('currentTime');
+            currentTime.textContent = time;
+            setTimeout(updateClock, 1000);
+        }
+        updateClock();
+        
+        // Draw a welcome pattern after a short delay
+        setTimeout(() => {
+            try {
+                // Draw a terminal-style pattern
+                const shapeModule = canvasManager.getModule('shape');
+                if (shapeModule) {
+                    shapeModule.handleCommand('pattern', ['grid']);
+                    console.log('Welcome pattern drawn');
+                }
+            } catch (e) {
+                console.error('Error drawing welcome pattern:', e);
+            }
+        }, 1000);
+    } catch (e) {
+        console.error('Error initializing Canvas Manager:', e);
+    }
 });
-
-/**
- * Initialize UI event handlers directly
- * This is a backup method to ensure key UI elements work
- */
-function initializeUIHandlers(canvasManager) {
-    // API link handlers
-    document.querySelectorAll('.api-link').forEach(link => {
-        link.addEventListener('click', (e) => {
-            e.preventDefault();
-            const url = link.getAttribute('data-url');
-            const type = link.getAttribute('data-type');
-            
-            if (type === 'image') {
-                // Handle image URLs differently
-                terminal.addOutput(`$ fetch image ${url}`);
-                Commands.processCommand(`fetch image ${url}`);
-            } else {
-                // Regular API data
-                terminal.addOutput(`$ fetch ${url}`);
-                Commands.fetchAPI(url);
-            }
-        });
-    });
-    
-    // Fetch button handler
-    const fetchButton = document.getElementById('fetchButton');
-    if (fetchButton) {
-        fetchButton.addEventListener('click', () => {
-            const urlInput = document.getElementById('urlInput');
-            if (urlInput && urlInput.value) {
-                terminal.addOutput(`$ fetch ${urlInput.value}`);
-                Commands.processCommand(`fetch ${urlInput.value}`);
-            } else {
-                terminal.addOutput('[ERROR] No URL specified for fetch');
-            }
-        });
-    }
-    
-    // Draw button handler
-    const drawButton = document.getElementById('drawButton');
-    if (drawButton) {
-        drawButton.addEventListener('click', () => {
-            terminal.addOutput('$ draw random');
-            Commands.processCommand('draw random');
-        });
-    }
-    
-    // Clear button handler
-    const clearButton = document.getElementById('clearButton');
-    if (clearButton) {
-        clearButton.addEventListener('click', () => {
-            terminal.addOutput('$ clear canvas');
-            Commands.processCommand('clear canvas');
-        });
-    }
-    
-    // Help button handler
-    const helpButton = document.getElementById('helpButton');
-    if (helpButton) {
-        helpButton.addEventListener('click', () => {
-            terminal.showHelp();
-        });
-    }
-}
