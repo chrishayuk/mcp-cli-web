@@ -159,6 +159,7 @@ Try one of the suggestions below or type your own command!</div>
     <script src="js/canvas/modules/chart-module.js"></script>
     <script src="js/canvas/modules/code-module.js"></script>
     <script src="js/canvas/modules/markdown-module.js"></script>
+    <script src="js/canvas/modules/wasm-bridge.js"></script>
     <script src="js/canvas/modules/streaming-terminal-module.js"></script>
     
     <!-- Terminal and core scripts -->
@@ -239,6 +240,15 @@ Try one of the suggestions below or type your own command!</div>
                     } else {
                         console.error("connect() method missing from terminal module");
                     }
+                    
+                    // Test WASM integration
+                    console.log("Testing WASM integration:");
+                    if (terminalModule.wasmBridge) {
+                        console.log("WASM bridge exists");
+                        console.log("WASM exports available:", !!terminalModule.wasmBridge.wasmExports);
+                    } else {
+                        console.warn("WASM bridge not found - terminal is using pure JavaScript");
+                    }
                 };
                 
                 // Update command suggestions
@@ -271,7 +281,7 @@ Try one of the suggestions below or type your own command!</div>
                     }
                 }
             }
-        }, 500); // Half-second delay
+        }, 1000); // One second delay to ensure WASM has time to load
     });
     </script>
 </body>
