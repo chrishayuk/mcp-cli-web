@@ -10,6 +10,10 @@ class WasmTerminalBridge {
         this.commandHistory = [];
         this.historyIndex = -1;
         this.webSocket = null; // WebSocket connection
+        
+        // Initialize memory tracking
+        this._memoryAllocations = [];
+        this._currentHeapEnd = 1024; // Start at 1KB offset to avoid null pointers
     }
     
     /**
@@ -19,15 +23,15 @@ class WasmTerminalBridge {
      */
     async initialize(wasmPath) {
         try {
-            // Import object based on the actual AssemblyScript requirements
+            // Import object with the "terminal" namespace as required by the WASM module
             const importObject = {
                 env: {
                     memory: new WebAssembly.Memory({ initial: 2, maximum: 10 }), // Increase memory size
                     abort: this._abort.bind(this)
                 },
-                // Import functions based on the AssemblyScript declarations
+                // Use "terminal" namespace as expected by the compiled WASM
                 terminal: {
-                    // These are the functions directly imported in the AssemblyScript code
+                    // Core functions from AssemblyScript declarations
                     consoleLog: this._consoleLog.bind(this),
                     consoleError: this._consoleError.bind(this),
                     sendWebSocketMessage: this._sendWebSocketMessage.bind(this),
@@ -252,10 +256,128 @@ class WasmTerminalBridge {
      * @param {string} str - String to allocate
      * @returns {number|null} - Pointer to string in WASM memory or null on failure
      */
+    /**
+     * Add AssemblyScript helper functions to the import object
+     * @param {Object} importObject - The import object for WebAssembly
+     */
+    _addAssemblyScriptHelpers(importObject) {
+        // Create a runtime namespace if it doesn't exist
+        if (!importObject.runtime) {
+            importObject.runtime = {};
+        }
+        
+        // Add minimal string allocation utilities that AssemblyScript might expect
+        importObject.runtime.__new = (size, id) => {
+            // Simple memory allocator - returns pointer to allocated memory
+            const ptr = this._malloc(size);
+            return ptr;
+        };
+        
+        importObject.runtime.__newString = (str) => {
+            const strLen = str.length;
+            const bufLen = strLen * 2 + 4; // UTF-16 + length prefix
+            
+            // Allocate memory for the string (length prefix + string data)
+            const ptr = this._malloc(bufLen);
+            if (!ptr) return 0;
+            
+            try {
+                const memory = importObject.env.memory.buffer;
+                const view32 = new Uint32Array(memory);
+                const view16 = new Uint16Array(memory);
+                
+                // Write length prefix
+                view32[ptr >> 2] = strLen;
+                
+                // Write string data as UTF-16
+                const dataOffset = (ptr + 4) >> 1;
+                for (let i = 0; i < strLen; i++) {
+                    view16[dataOffset + i] = str.charCodeAt(i);
+                }
+                
+                return ptr + 4; // Return pointer to string data (after length prefix)
+            } catch (e) {
+                console.error("Error in __newString:", e);
+                return 0;
+            }
+        };
+    }
+    
+    /**
+     * Simple memory allocator for WASM
+     * @param {number} size - Size in bytes to allocate
+     * @returns {number} - Pointer to allocated memory
+     */
+    _malloc(size) {
+        try {
+            // Round up to multiple of 8 for alignment
+            size = (size + 7) & ~7;
+            
+            const ptr = this._currentHeapEnd;
+            this._currentHeapEnd += size;
+            
+            // Make sure we don't exceed memory limits
+            const memory = this.wasmMemory || (this.wasmExports && this.wasmExports.memory);
+            if (memory) {
+                const currentPages = memory.buffer.byteLength / 65536;
+                const requiredPages = Math.ceil(this._currentHeapEnd / 65536);
+                
+                if (requiredPages > currentPages) {
+                    try {
+                        memory.grow(requiredPages - currentPages);
+                    } catch (e) {
+                        console.error("Failed to grow memory:", e);
+                        return 0;
+                    }
+                }
+            }
+            
+            // Track allocation for debugging
+            if (this._memoryAllocations) {
+                this._memoryAllocations.push({ ptr, size });
+            }
+            return ptr;
+        } catch (e) {
+            console.error("Error in _malloc:", e);
+            return 0;
+        }
+    }
+    
+    /**
+     * Allocate string in WASM memory
+     * @param {string} str - String to allocate
+     * @returns {number|null} - Pointer to string in WASM memory or null on failure
+     */
     allocateString(str) {
         try {
             if (!str) return 0;
             if (!this.wasmExports) return 0;
+            
+            // Try to use our own string allocator first
+            if (typeof this._malloc === 'function') {
+                const strLen = str.length;
+                const bufLen = strLen * 2 + 4; // UTF-16 + length prefix
+                
+                // Allocate memory for the string (length prefix + string data)
+                const ptr = this._malloc(bufLen);
+                if (!ptr) return 0;
+                
+                // Write the string data
+                const memory = this.wasmExports.memory.buffer;
+                const view32 = new Uint32Array(memory);
+                const view16 = new Uint16Array(memory);
+                
+                // Write length prefix
+                view32[ptr >> 2] = strLen;
+                
+                // Write string data as UTF-16
+                const dataOffset = (ptr + 4) >> 1;
+                for (let i = 0; i < strLen; i++) {
+                    view16[dataOffset + i] = str.charCodeAt(i);
+                }
+                
+                return ptr + 4; // Return pointer to string data (after length prefix)
+            }
             
             // If __newString exists, use it directly
             if (typeof this.wasmExports.__newString === 'function') {
@@ -278,7 +400,7 @@ class WasmTerminalBridge {
                 if (!ptr) return 0;
                 
                 // Write the string bytes to memory
-                const memory = this.wasmMemory.buffer;
+                const memory = this.wasmExports.memory.buffer;
                 const view = new Uint8Array(memory);
                 for (let i = 0; i < len; i++) {
                     view[ptr + i] = bytes[i];
@@ -318,25 +440,37 @@ class WasmTerminalBridge {
                 this.historyIndex = this.commandHistory.length;
             }
             
-            // Try to allocate the string
-            let cmdPtr = 0;
-            if (typeof this.wasmExports.__newString === 'function') {
-                cmdPtr = this.wasmExports.__newString(command);
-            } else {
-                cmdPtr = this.allocateString(command);
-            }
-            
-            if (!cmdPtr) {
-                console.error("Failed to allocate string in WASM memory");
-                return false;
-            }
-            
-            // Process the command
+            // Create a simplified C-style null-terminated string
+            // This approach is more compatible with different WASM modules
             try {
-                this.wasmExports.processCommand(cmdPtr);
+                // Get memory
+                const memory = this.wasmExports.memory.buffer;
+                const view = new Uint8Array(memory);
+                
+                // Simple UTF-8 encoding
+                const encoder = new TextEncoder();
+                const bytes = encoder.encode(command);
+                const len = bytes.length;
+                
+                // Allocate string directly in memory
+                const ptr = this._malloc(len + 1);
+                if (!ptr) {
+                    console.error("Failed to allocate memory for command");
+                    return false;
+                }
+                
+                // Copy string bytes
+                for (let i = 0; i < len; i++) {
+                    view[ptr + i] = bytes[i];
+                }
+                // Null terminator
+                view[ptr + len] = 0;
+                
+                // Process the command
+                this.wasmExports.processCommand(ptr);
                 return true;
             } catch (error) {
-                console.error("WASM execution error:", error);
+                console.error("Error processing command:", error);
                 return false;
             }
         } catch (error) {
@@ -354,18 +488,45 @@ class WasmTerminalBridge {
         try {
             if (!message) return false;
             
-            // If processCommand is available, use it
-            if (this.wasmExports && typeof this.wasmExports.processCommand === 'function') {
-                return this.processCommand(message);
+            // If processWSMessage is available (specific function), use it
+            if (this.wasmExports && typeof this.wasmExports.processWebSocketMessage === 'function') {
+                // Create a simplified C-style null-terminated string
+                try {
+                    // Get memory
+                    const memory = this.wasmExports.memory.buffer;
+                    const view = new Uint8Array(memory);
+                    
+                    // Simple UTF-8 encoding
+                    const encoder = new TextEncoder();
+                    const bytes = encoder.encode(message);
+                    const len = bytes.length;
+                    
+                    // Allocate string directly in memory
+                    const ptr = this._malloc(len + 1);
+                    if (!ptr) {
+                        console.error("Failed to allocate memory for message");
+                        return false;
+                    }
+                    
+                    // Copy string bytes
+                    for (let i = 0; i < len; i++) {
+                        view[ptr + i] = bytes[i];
+                    }
+                    // Null terminator
+                    view[ptr + len] = 0;
+                    
+                    // Process the message
+                    this.wasmExports.processWebSocketMessage(ptr);
+                    return true;
+                } catch (error) {
+                    console.error("Error processing WebSocket message:", error);
+                    return false;
+                }
             }
             
-            // If processWSMessage is available (specific function), use it
-            if (this.wasmExports && typeof this.wasmExports.processWSMessage === 'function') {
-                const msgPtr = this.allocateString(message);
-                if (!msgPtr) return false;
-                
-                this.wasmExports.processWSMessage(msgPtr);
-                return true;
+            // If processCommand is available, use it as fallback
+            if (this.wasmExports && typeof this.wasmExports.processCommand === 'function') {
+                return this.processCommand(message);
             }
             
             // No suitable function found

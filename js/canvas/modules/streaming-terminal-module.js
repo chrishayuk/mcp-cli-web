@@ -133,12 +133,80 @@ class StreamingTerminalModule extends CanvasModule {
             this.ctx.fillStyle = this.textColor;
             this.ctx.font = `${this.fontSize}px ${this.fontFamily}`;
             this.ctx.textBaseline = 'top';
-            this.ctx.fillText('Terminal Error - No state available', 10, 10);
+            this.ctx.fillText('Terminal Ready', 10, 10);
             return;
         }
         
         try {
-            const terminalState = typeof state === 'string' ? JSON.parse(state) : state;
+            let terminalState;
+            
+            if (typeof state === 'string') {
+                try {
+                    // Try to parse as JSON first
+                    terminalState = JSON.parse(state);
+                } catch (e) {
+                    // If not valid JSON, it might be the string format from the AssemblyScript code
+                    // Parse the formatted string to extract relevant information
+                    const lines = state.split(/\r?\n/);
+                    const parsedState = { cells: [] };
+                    
+                    // Create a cursor at position 0,0
+                    parsedState.cursor = { x: 0, y: 0, visible: true };
+                    
+                    // Parse lines into cells
+                    for (let y = 0; y < lines.length && y < this.rows; y++) {
+                        const line = lines[y];
+                        for (let x = 0; x < line.length && x < this.cols; x++) {
+                            parsedState.cells.push({
+                                x,
+                                y,
+                                char: line[x],
+                                fgColor: this.textColor,
+                                bgColor: this.bgColor,
+                                bold: false,
+                                italic: false,
+                                underline: false
+                            });
+                        }
+                    }
+                    
+                    terminalState = parsedState;
+                }
+            } else {
+                terminalState = state;
+            }
+            
+            // If the state doesn't have cells array, try to create one
+            if (!terminalState.cells || !Array.isArray(terminalState.cells)) {
+                terminalState.cells = [];
+                
+                // If we have a text description from the AssemblyScript module
+                if (terminalState.text || (typeof state === 'string' && state.length > 0)) {
+                    const text = terminalState.text || state;
+                    const lines = text.split(/\r?\n/);
+                    
+                    for (let y = 0; y < lines.length && y < this.rows; y++) {
+                        const line = lines[y];
+                        for (let x = 0; x < line.length && x < this.cols; x++) {
+                            terminalState.cells.push({
+                                x,
+                                y,
+                                char: line[x],
+                                fgColor: this.textColor,
+                                bgColor: this.bgColor,
+                                bold: false,
+                                italic: false,
+                                underline: false
+                            });
+                        }
+                    }
+                }
+            }
+            
+            // Make sure cursor exists
+            if (!terminalState.cursor) {
+                terminalState.cursor = { x: 0, y: 0, visible: true };
+            }
             
             // Render cells
             if (terminalState.cells && Array.isArray(terminalState.cells)) {
@@ -640,7 +708,19 @@ class StreamingTerminalModule extends CanvasModule {
         
         try {
             const ptr = this.wasmBridge.wasmExports.getTerminalState();
-            return ptr ? this.wasmBridge.getString(ptr) : null;
+            if (!ptr) return null;
+            
+            // Get raw string from WASM
+            const rawState = this.wasmBridge.getString(ptr);
+            
+            // Try to convert it to proper terminal state
+            try {
+                // First, try to parse as JSON
+                return JSON.parse(rawState);
+            } catch (parseError) {
+                // If not valid JSON, return raw string for custom parsing
+                return rawState;
+            }
         } catch (error) {
             console.error("Error getting terminal state:", error);
             return null;
