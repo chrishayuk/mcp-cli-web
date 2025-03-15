@@ -217,6 +217,43 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         },
         
+        // Execute markdown module commands directly
+        executeMarkdownCommand: function(action, content) {
+            try {
+                console.log("Directly executing markdown command:", action, content);
+                
+                // Direct canvas-manager manipulation for markdown
+                if (window.Commands && window.Commands.canvasManager) {
+                    const cm = window.Commands.canvasManager;
+                    cm.activateModule('markdown');
+                    const mdModule = cm.getModule('markdown');
+                    
+                    if (mdModule) {
+                        // Call specific methods based on action
+                        if (action === 'render' && content) {
+                            return mdModule.renderMarkdown(content);
+                        } else if (action === 'load') {
+                            return mdModule.loadMarkdown(content || 'sample');
+                        } else if (action === 'theme') {
+                            return mdModule.setTheme(content || 'dark');
+                        } else if (action === 'scroll') {
+                            // Handle scroll with default amount
+                            const direction = content || 'down';
+                            return mdModule.handleCommand('scroll', [direction]);
+                        }
+                    } else {
+                        console.error("Markdown module not found in canvas manager");
+                    }
+                } else {
+                    console.error("Canvas manager not available");
+                }
+                return false;
+            } catch (e) {
+                console.error("Error executing markdown command directly:", e);
+                return false;
+            }
+        },
+        
         // Process command by connecting to the existing command system
         processCommand: function(command) {
             // Show typing indicator
@@ -230,6 +267,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 responseTime = 1200;
             } else if (command.includes('image')) {
                 responseTime = 900;
+            } else if (command.includes('markdown') || command.includes(' md ')) {
+                responseTime = 1000;
             }
             
             // Process command after realistic delay
@@ -271,6 +310,61 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }
                 
+                // Handle markdown commands directly
+                let markdownRenderMatch = command.match(/^(show|display|render)\s+(markdown|md)/i);
+                let markdownLoadMatch = command.match(/^(load|open)\s+(markdown|md)/i);
+                let markdownScrollMatch = command.match(/^(scroll|move)\s+(markdown|md)/i);
+                let markdownThemeMatch = command.match(/^(change|set)\s+(markdown|md)\s+(theme|style)/i);
+                
+                if (markdownRenderMatch) {
+                    // Extract markdown content
+                    const mdContentMatch = command.match(/^(?:show|display|render)\s+(?:markdown|md)(?:[:]\s*|\s+)([\s\S]*)/i);
+                    const mdContent = mdContentMatch && mdContentMatch[1] ? 
+                        mdContentMatch[1].trim() : null;
+                    
+                    if (mdContent) {
+                        // User provided specific markdown content
+                        if (this.executeMarkdownCommand('render', mdContent)) {
+                            this.addSystemMessage("I've rendered the markdown for you. Try scrolling or changing the theme if you'd like.");
+                            return;
+                        }
+                    } else {
+                        // No specific content, load sample
+                        if (this.executeMarkdownCommand('load', 'sample')) {
+                            this.addSystemMessage("I've loaded a sample markdown document for you. You can scroll up/down to navigate.");
+                            return;
+                        }
+                    }
+                } else if (markdownLoadMatch) {
+                    // Extract source if provided
+                    const sourceMatch = command.match(/^(?:load|open)\s+(?:markdown|md)(?:\s+from)?\s+(.+)/i);
+                    const source = sourceMatch && sourceMatch[1] ? 
+                        sourceMatch[1].trim() : 'sample';
+                    
+                    if (this.executeMarkdownCommand('load', source)) {
+                        this.addSystemMessage("I've loaded the markdown document for you. You can scroll up/down to navigate.");
+                        return;
+                    }
+                } else if (markdownScrollMatch) {
+                    // Extract direction
+                    const directionMatch = command.match(/\b(up|down|top|bottom)\b/i);
+                    const direction = directionMatch ? directionMatch[1].toLowerCase() : 'down';
+                    
+                    if (this.executeMarkdownCommand('scroll', direction)) {
+                        this.addSystemMessage("I've scrolled the markdown content as requested.");
+                        return;
+                    }
+                } else if (markdownThemeMatch) {
+                    // Extract theme
+                    const themeMatch = command.match(/\b(dark|light|dracula|github)\b/i);
+                    const theme = themeMatch ? themeMatch[1].toLowerCase() : 'dark';
+                    
+                    if (this.executeMarkdownCommand('theme', theme)) {
+                        this.addSystemMessage(`I've updated the markdown theme to ${theme}. You can also try 'light', 'dark', 'dracula', or 'github' themes.`);
+                        return;
+                    }
+                }
+                
                 // Convert chat-style commands to terminal commands
                 let terminalCommand = command;
                 
@@ -286,6 +380,41 @@ document.addEventListener('DOMContentLoaded', function() {
                     const codeContent = codeContentMatch && codeContentMatch[1] ? 
                         codeContentMatch[1].trim() : 'console.log("Hello World");';
                     terminalCommand = `code display ${codeContent}`;
+                } 
+                // Markdown commands
+                else if (command.match(/^(show|display|render) (markdown|md)/i)) {
+                    // Extract markdown content
+                    const mdMatch = command.match(/^(?:show|display|render)\s+(?:markdown|md)(?:[:]\s*|\s+)([\s\S]*)/i);
+                    if (mdMatch && mdMatch[1]) {
+                        // User provided specific markdown content
+                        terminalCommand = `markdown render ${mdMatch[1].trim()}`;
+                    } else {
+                        // No specific content, load sample
+                        terminalCommand = 'markdown load sample';
+                    }
+                } else if (command.match(/^(load|open) (markdown|md)/i)) {
+                    // Extract source if provided
+                    const sourceMatch = command.match(/^(?:load|open)\s+(?:markdown|md)(?:\s+from)?\s+(.+)/i);
+                    if (sourceMatch && sourceMatch[1]) {
+                        terminalCommand = `markdown load ${sourceMatch[1].trim()}`;
+                    } else {
+                        // Default to sample
+                        terminalCommand = 'markdown load sample';
+                    }
+                } else if (command.match(/^(scroll|move) (markdown|md) (up|down|top|bottom)/i)) {
+                    // Extract direction
+                    const directionMatch = command.match(/\b(up|down|top|bottom)\b/i);
+                    if (directionMatch) {
+                        terminalCommand = `markdown scroll ${directionMatch[1].toLowerCase()}`;
+                    }
+                } else if (command.match(/^(change|set) (markdown|md) (theme|style)/i)) {
+                    // Extract theme
+                    const themeMatch = command.match(/\b(dark|light|dracula|github)\b/i);
+                    if (themeMatch) {
+                        terminalCommand = `markdown theme ${themeMatch[1].toLowerCase()}`;
+                    } else {
+                        terminalCommand = 'markdown theme dark'; // Default
+                    }
                 } else if (command.match(/^(draw|create|make) (a |the )?(pattern|shape)/i)) {
                     terminalCommand = 'draw pattern';
                 } else if (command.match(/^(help|commands|what can you do)/i)) {
@@ -311,13 +440,27 @@ document.addEventListener('DOMContentLoaded', function() {
                             response = "Here's your chart! You can try different types like bar, pie, or line charts.";
                         } else if (command.includes('code')) {
                             response = "I've formatted and displayed the code with syntax highlighting.";
-                        } else if (command.includes('pattern') || command.includes('shape')) {
+                        } 
+                        // Markdown responses
+                        else if (command.includes('markdown') || command.includes(' md ')) {
+                            if (command.includes('load') || command.includes('open')) {
+                                response = "I've loaded the markdown document for you. You can scroll up/down to navigate.";
+                            } else if (command.includes('scroll') || command.includes('move')) {
+                                response = "I've scrolled the markdown content as requested.";
+                            } else if (command.includes('theme') || command.includes('style')) {
+                                response = "I've updated the markdown theme. You can also try 'light', 'dark', 'dracula', or 'github' themes.";
+                            } else {
+                                response = "I've rendered the markdown for you. Try scrolling or changing the theme if you'd like.";
+                            }
+                        } 
+                        else if (command.includes('pattern') || command.includes('shape')) {
                             response = "I've created a pattern for you! You can try 'draw random' for a different shape.";
                         } else if (command.includes('help')) {
                             response = `Here's what I can do:
 - Show images: "show image [url]" or "show random image"
 - Create charts: "create pie chart", "bar chart", "line chart"
 - Display code with syntax highlighting: "show code [your code]"
+- Render markdown: "show markdown [text]" or "load markdown from [url]"
 - Draw shapes and patterns: "draw pattern", "draw random"
 - Clear the canvas: "clear canvas"`;
                         } else {
@@ -376,6 +519,43 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log("Direct displayCode result:", result);
         } catch (error) {
             console.error("Error calling displayCode directly:", error);
+        }
+    };
+    
+    // Add debugging function for markdown module
+    window.debugMarkdownModule = function() {
+        console.log("=== MARKDOWN MODULE DEBUG ===");
+        
+        if (!window.Commands) {
+            console.error("Commands object not available");
+            return;
+        }
+        
+        if (!window.Commands.canvasManager) {
+            console.error("Canvas Manager not available");
+            return;
+        }
+        
+        const cm = window.Commands.canvasManager;
+        console.log("Available modules:", Object.keys(cm.modules || {}));
+        
+        const mdModule = cm.getModule('markdown');
+        if (!mdModule) {
+            console.error("Markdown module not found in canvas manager");
+            return;
+        }
+        
+        console.log("Markdown module properties:", Object.getOwnPropertyNames(mdModule));
+        console.log("Markdown module prototype methods:", 
+                   Object.getOwnPropertyNames(Object.getPrototypeOf(mdModule)));
+        
+        // Test the module with a simple markdown snippet
+        console.log("Testing markdown module directly:");
+        try {
+            const result = mdModule.renderMarkdown('# Test Heading\n\nThis is a test.');
+            console.log("Direct renderMarkdown result:", result);
+        } catch (error) {
+            console.error("Error calling renderMarkdown directly:", error);
         }
     };
     

@@ -8,7 +8,8 @@ class CommandProcessor {
             'image': ['display', 'load', 'random'],
             'chart': ['bar', 'line', 'pie', 'data', 'random'],
             'code': ['display', 'language', 'fontsize', 'theme'],
-            'shape': ['draw', 'random', 'pattern', 'animate', 'stop']
+            'shape': ['draw', 'random', 'pattern', 'animate', 'stop'],
+            'markdown': ['render', 'load', 'scroll', 'theme']
         };
     }
     
@@ -81,6 +82,56 @@ class CommandProcessor {
                     const codeContent = commandText.substring(commandText.indexOf('display') + 8);
                     return this.canvasManager.executeCommand('display', codeContent);
                 }
+                return true;
+                
+            case 'markdown':
+            case 'md':
+                this.activateModule('markdown');
+                if (args.length > 0) {
+                    if (args[0] === 'render') {
+                        // Extract markdown content after "render"
+                        const mdContent = commandText.substring(commandText.indexOf('render') + 7);
+                        return this.canvasManager.executeCommand('render', mdContent);
+                    } else if (args[0] === 'load') {
+                        // Handle load command with source parameter
+                        if (args.length > 1) {
+                            return this.canvasManager.executeCommand('load', args[1]);
+                        } else {
+                            terminal.addOutput('[ERROR] Source required for markdown load');
+                            return false;
+                        }
+                    } else if (args[0] === 'scroll') {
+                        // Handle scroll commands
+                        if (args.length > 1) {
+                            const direction = args[1];
+                            const amount = args.length > 2 ? args[2] : null;
+                            return this.canvasManager.executeCommand('scroll', direction, amount);
+                        } else {
+                            terminal.addOutput('[ERROR] Direction required for markdown scroll');
+                            return false;
+                        }
+                    } else if (args[0] === 'theme') {
+                        // Handle theme command
+                        if (args.length > 1) {
+                            return this.canvasManager.executeCommand('theme', args[1]);
+                        } else {
+                            terminal.addOutput('[ERROR] Theme name required for markdown theme');
+                            return false;
+                        }
+                    }
+                }
+                
+                // No arguments or unrecognized command, show help
+                terminal.addOutput(`
+Markdown Module Commands:
+-----------------------
+render [text]     - Render markdown text
+load [source]     - Load markdown from source (URL or 'sample')
+scroll [up/down]  - Scroll markdown content
+theme [name]      - Set theme (dark, light, dracula, github)
+
+Example: markdown load sample
+`);
                 return true;
                 
             case 'help':
@@ -169,6 +220,15 @@ class CommandProcessor {
             } else {
                 return this.canvasManager.executeCommand('random');
             }
+        } else if (args[0] === 'markdown') {
+            // Handle fetch markdown command
+            if (args.length > 1) {
+                this.activateModule('markdown');
+                return this.canvasManager.executeCommand('load', args[1]);
+            } else {
+                terminal.addOutput('[ERROR] URL required for fetch markdown');
+                return false;
+            }
         } else {
             // Regular API fetch
             const url = args.join(' ');
@@ -249,8 +309,20 @@ class CommandProcessor {
                             responseContainer.textContent = text;
                         }
                         
+                        // Check if it looks like markdown
+                        if (contentType.includes('markdown') || 
+                            contentType.includes('text/md') || 
+                            url.endsWith('.md') ||
+                            text.includes('# ') || 
+                            text.match(/\*\*.*\*\*/) || 
+                            text.match(/\[.*\]\(.*\)/)) {
+                            // Looks like markdown, use markdown module
+                            this.activateModule('markdown');
+                            this.canvasManager.executeCommand('render', text);
+                            terminal.updateStatus('success', 'Markdown rendered successfully');
+                        }
                         // Check if it looks like code
-                        if (contentType.includes('javascript') || 
+                        else if (contentType.includes('javascript') || 
                             contentType.includes('json') || 
                             text.includes('function') || 
                             text.includes('class')) {
@@ -304,10 +376,11 @@ class CommandProcessor {
         terminal.addOutput(`
 Available modules:
 -----------------
-image - Display and manipulate images
-chart - Create data visualizations
-code  - Display formatted code
-shape - Draw shapes and patterns
+image    - Display and manipulate images
+chart    - Create data visualizations
+code     - Display formatted code
+shape    - Draw shapes and patterns
+markdown - Render and format markdown content
 
 Use 'module [name]' to activate a module.
 Use 'commands [module]' to see module-specific commands.

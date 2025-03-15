@@ -36,7 +36,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 .registerModule('image', new ImageModule())
                 .registerModule('chart', new ChartModule())
                 .registerModule('code', new CodeModule())
-                .registerModule('shape', new ShapeModule());
+                .registerModule('shape', new ShapeModule())
+                .registerModule('markdown', new MarkdownModule());
         } catch (e) {
             console.error('Error registering modules:', e);
         }
@@ -108,6 +109,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error('Error drawing welcome pattern:', e);
             }
         }, 1000);
+        
+        // Add markdown command to suggestions
+        const suggestionsContainer = document.getElementById('command-suggestions');
+        if (suggestionsContainer) {
+            // Create a new markdown suggestion
+            const mdSuggestion = document.createElement('span');
+            mdSuggestion.className = 'command-suggestion';
+            mdSuggestion.textContent = 'show markdown';
+            
+            // Add it to the container
+            suggestionsContainer.appendChild(mdSuggestion);
+        }
     } catch (e) {
         console.error('Error initializing Canvas Manager:', e);
     }
