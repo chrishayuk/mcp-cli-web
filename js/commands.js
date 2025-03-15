@@ -9,7 +9,8 @@ class CommandProcessor {
             'chart': ['bar', 'line', 'pie', 'data', 'random'],
             'code': ['display', 'language', 'fontsize', 'theme'],
             'shape': ['draw', 'random', 'pattern', 'animate', 'stop'],
-            'markdown': ['render', 'load', 'scroll', 'theme']
+            'markdown': ['render', 'load', 'scroll', 'theme'],
+            'terminal': ['connect', 'disconnect', 'send', 'clear', 'resize']
         };
     }
     
@@ -133,6 +134,67 @@ theme [name]      - Set theme (dark, light, dracula, github)
 Example: markdown load sample
 `);
                 return true;
+
+            case 'terminal':
+            case 'term':
+                this.activateModule('terminal');
+                if (args.length > 0) {
+                    if (args[0] === 'connect') {
+                        // Handle connect command with endpoint parameter
+                        if (args.length > 1) {
+                            // Join all remaining args to handle URLs with spaces
+                            const endpoint = args.slice(1).join(' ');
+                            return this.canvasManager.executeCommand('connect', endpoint);
+                        } else {
+                            terminal.addOutput('[ERROR] Endpoint required for terminal connect');
+                            return false;
+                        }
+                    } else if (args[0] === 'send') {
+                        // Handle send command with data parameter
+                        if (args.length > 1) {
+                            // Join all remaining args to handle commands with spaces
+                            const data = args.slice(1).join(' ');
+                            return this.canvasManager.executeCommand('send', data);
+                        } else {
+                            terminal.addOutput('[ERROR] Command required for terminal send');
+                            return false;
+                        }
+                    } else if (args[0] === 'disconnect') {
+                        return this.canvasManager.executeCommand('disconnect');
+                    } else if (args[0] === 'clear') {
+                        return this.canvasManager.executeCommand('clear');
+                    } else if (args[0] === 'resize') {
+                        // Handle resize command with dimensions
+                        if (args.length > 2) {
+                            const cols = parseInt(args[1]);
+                            const rows = parseInt(args[2]);
+                            if (!isNaN(cols) && !isNaN(rows)) {
+                                return this.canvasManager.executeCommand('resize', cols, rows);
+                            } else {
+                                terminal.addOutput('[ERROR] Invalid dimensions for terminal resize');
+                                return false;
+                            }
+                        } else {
+                            terminal.addOutput('[ERROR] Dimensions required for terminal resize (cols rows)');
+                            return false;
+                        }
+                    }
+                }
+                
+                // No arguments or unrecognized command, show help
+                terminal.addOutput(`
+Terminal Module Commands:
+-----------------------
+connect [endpoint] - Connect to a terminal server
+send [data]        - Send data to the terminal
+disconnect        - Disconnect from the terminal
+clear             - Clear the terminal
+resize [cols] [rows] - Resize the terminal
+
+Example: terminal connect wss://echo.websocket.org
+Example: terminal send ls -la
+`);
+                return true;
                 
             case 'help':
                 terminal.showHelp();
@@ -227,6 +289,15 @@ Example: markdown load sample
                 return this.canvasManager.executeCommand('load', args[1]);
             } else {
                 terminal.addOutput('[ERROR] URL required for fetch markdown');
+                return false;
+            }
+        } else if (args[0] === 'terminal') {
+            // Handle fetch terminal command
+            if (args.length > 1) {
+                this.activateModule('terminal');
+                return this.canvasManager.executeCommand('connect', args[1]);
+            } else {
+                terminal.addOutput('[ERROR] URL required for fetch terminal');
                 return false;
             }
         } else {
@@ -381,6 +452,7 @@ chart    - Create data visualizations
 code     - Display formatted code
 shape    - Draw shapes and patterns
 markdown - Render and format markdown content
+terminal - Connect to and interact with remote terminals
 
 Use 'module [name]' to activate a module.
 Use 'commands [module]' to see module-specific commands.

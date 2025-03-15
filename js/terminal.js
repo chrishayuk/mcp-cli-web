@@ -38,6 +38,8 @@ class Terminal {
       - chart: Create data visualizations
       - code: Display formatted code
       - shape: Draw shapes and patterns
+      - markdown: Render markdown content
+      - terminal: Connect to remote terminals
 
 [INFO] Try these example commands:
       $ module image
@@ -46,8 +48,10 @@ class Terminal {
       $ chart random
       $ module code
       $ code display console.log("Hello World");
-      $ module shape
-      $ draw pattern
+      $ module markdown
+      $ markdown load sample
+      $ module terminal
+      $ terminal connect wss://echo.websocket.org
 
 [INFO] Type "help" for all available commands
 `);
@@ -144,14 +148,29 @@ class Terminal {
      */
     updateStatus(state, message) {
         const indicator = document.getElementById('statusIndicator');
-        indicator.className = 'status ' + state;
+        if (indicator) {
+            indicator.className = 'status ' + state;
+            
+            let icon = 'circle';
+            if (state === 'loading') icon = 'spinner fa-spin';
+            else if (state === 'success') icon = 'check-circle';
+            else if (state === 'error') icon = 'exclamation-circle';
+            
+            indicator.innerHTML = `<i class="fas fa-${icon}"></i> <span>${message}</span>`;
+        }
         
-        let icon = 'circle';
-        if (state === 'loading') icon = 'spinner fa-spin';
-        else if (state === 'success') icon = 'check-circle';
-        else if (state === 'error') icon = 'exclamation-circle';
-        
-        indicator.innerHTML = `<i class="fas fa-${icon}"></i> <span>${message}</span>`;
+        // Also update canvas status if available
+        const canvasStatus = document.getElementById('canvasStatus');
+        if (canvasStatus) {
+            canvasStatus.className = 'status ' + state;
+            
+            let icon = 'circle';
+            if (state === 'loading') icon = 'spinner fa-spin';
+            else if (state === 'success') icon = 'check-circle';
+            else if (state === 'error') icon = 'exclamation-circle';
+            
+            canvasStatus.innerHTML = `<i class="fas fa-${icon}"></i> <span>${message}</span>`;
+        }
         
         // Add to terminal output
         this.addOutput(`[${state.toUpperCase()}] ${message}`);
@@ -164,7 +183,7 @@ class Terminal {
         this.addOutput(`
 Available commands:
 -------------------
-module [name]     - Switch to a specific module (image, chart, code, shape)
+module [name]     - Switch to a specific module (image, chart, code, shape, markdown, terminal)
 fetch [url]       - Fetch data from API
 fetch image       - Fetch and display a random image
 
@@ -192,6 +211,19 @@ shape:
   animate         - Animate shapes
   stop            - Stop animation
 
+markdown:
+  render [text]   - Render markdown text
+  load [source]   - Load markdown from source
+  scroll [dir]    - Scroll content (up, down, top, bottom)
+  theme [theme]   - Set theme (dark, light, dracula, github)
+
+terminal:
+  connect [url]   - Connect to a terminal server
+  send [command]  - Send command to the terminal
+  disconnect      - Disconnect from the terminal
+  clear           - Clear the terminal display
+  resize [x] [y]  - Resize the terminal dimensions
+
 General commands:
 ---------------
 clear canvas      - Clear the canvas
@@ -213,11 +245,14 @@ Available APIs:
 fetch https://jsonplaceholder.typicode.com/todos/1    - JSON Placeholder (Todo)
 fetch https://randomuser.me/api/                      - Random User Generator
 fetch image                                           - Random image
+fetch markdown https://raw.githubusercontent.com/username/repo/main/README.md - Markdown content
+fetch terminal wss://echo.websocket.org         - Terminal connection
 
 Content detection:
   - JSON data will be visualized as charts
   - Images will be displayed in the image module
   - Code will be displayed with syntax highlighting
+  - Markdown will be rendered in the markdown module
 `);
     }
     

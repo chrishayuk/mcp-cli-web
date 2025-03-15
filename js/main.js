@@ -32,12 +32,29 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Register modules with error handling
         try {
+            console.log("Registering standard modules...");
             canvasManager
                 .registerModule('image', new ImageModule())
                 .registerModule('chart', new ChartModule())
                 .registerModule('code', new CodeModule())
                 .registerModule('shape', new ShapeModule())
                 .registerModule('markdown', new MarkdownModule());
+            
+            console.log("Standard modules registered successfully");
+            
+            // Register terminal module separately with more error handling
+            try {
+                console.log("Attempting to register terminal module...");
+                if (typeof StreamingTerminalModule === 'undefined') {
+                    throw new Error("StreamingTerminalModule class is not defined");
+                }
+                const terminalModule = new StreamingTerminalModule();
+                console.log("Terminal module instance created:", terminalModule);
+                canvasManager.registerModule('terminal', terminalModule);
+                console.log("Terminal module registered successfully");
+            } catch (e) {
+                console.error('Error registering terminal module:', e);
+            }
         } catch (e) {
             console.error('Error registering modules:', e);
         }
@@ -64,6 +81,20 @@ document.addEventListener('DOMContentLoaded', () => {
                         canvasManager.getModule('shape').handleCommand('random');
                     } else if (cmd === 'clear canvas') {
                         canvasManager.clearCanvas();
+                    } else if (cmd.startsWith('terminal')) {
+                        const parts = cmd.split(' ');
+                        if (parts.length > 1) {
+                            canvasManager.activateModule('terminal');
+                            if (parts[1] === 'connect' && parts.length > 2) {
+                                canvasManager.getModule('terminal').handleCommand('connect', [parts.slice(2).join(' ')]);
+                            } else if (parts[1] === 'send' && parts.length > 2) {
+                                canvasManager.getModule('terminal').handleCommand('send', [parts.slice(2).join(' ')]);
+                            } else if (parts[1] === 'disconnect') {
+                                canvasManager.getModule('terminal').handleCommand('disconnect');
+                            } else if (parts[1] === 'clear') {
+                                canvasManager.getModule('terminal').handleCommand('clear');
+                            }
+                        }
                     }
                     return true;
                 }
@@ -110,16 +141,28 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }, 1000);
         
-        // Add markdown command to suggestions
+        // Update command suggestions
         const suggestionsContainer = document.getElementById('command-suggestions');
         if (suggestionsContainer) {
-            // Create a new markdown suggestion
-            const mdSuggestion = document.createElement('span');
-            mdSuggestion.className = 'command-suggestion';
-            mdSuggestion.textContent = 'show markdown';
+            // Add markdown and terminal suggestions
+            const additionalSuggestions = [
+                { text: 'show markdown', icon: 'fa-file-alt' },
+                { text: 'connect terminal', icon: 'fa-terminal' }
+            ];
             
-            // Add it to the container
-            suggestionsContainer.appendChild(mdSuggestion);
+            additionalSuggestions.forEach(suggestion => {
+                const suggestionElement = document.createElement('span');
+                suggestionElement.className = 'command-suggestion';
+                
+                // Add icon if specified
+                if (suggestion.icon) {
+                    suggestionElement.innerHTML = `<i class="fas ${suggestion.icon}"></i> ${suggestion.text}`;
+                } else {
+                    suggestionElement.textContent = suggestion.text;
+                }
+                
+                suggestionsContainer.appendChild(suggestionElement);
+            });
         }
     } catch (e) {
         console.error('Error initializing Canvas Manager:', e);

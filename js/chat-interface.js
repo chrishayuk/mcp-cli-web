@@ -254,6 +254,41 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         },
         
+        // Execute terminal module commands directly
+        executeTerminalCommand: function(action, content) {
+            try {
+                console.log("Directly executing terminal command:", action, content);
+                
+                // Direct canvas-manager manipulation for terminal
+                if (window.Commands && window.Commands.canvasManager) {
+                    const cm = window.Commands.canvasManager;
+                    cm.activateModule('terminal');
+                    const terminalModule = cm.getModule('terminal');
+                    
+                    if (terminalModule) {
+                        // Call specific methods based on action
+                        if (action === 'connect' && content) {
+                            return terminalModule.connect(content);
+                        } else if (action === 'send' && content) {
+                            return terminalModule.sendData(content);
+                        } else if (action === 'disconnect') {
+                            return terminalModule.disconnect();
+                        } else if (action === 'clear') {
+                            return terminalModule.clearTerminal();
+                        }
+                    } else {
+                        console.error("Terminal module not found in canvas manager");
+                    }
+                } else {
+                    console.error("Canvas manager not available");
+                }
+                return false;
+            } catch (e) {
+                console.error("Error executing terminal command directly:", e);
+                return false;
+            }
+        },
+        
         // Process command by connecting to the existing command system
         processCommand: function(command) {
             // Show typing indicator
@@ -269,6 +304,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 responseTime = 900;
             } else if (command.includes('markdown') || command.includes(' md ')) {
                 responseTime = 1000;
+            } else if (command.includes('terminal') || command.includes('connect')) {
+                responseTime = 1500;
             }
             
             // Process command after realistic delay
@@ -365,6 +402,47 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }
                 
+                // Handle terminal commands directly
+                let terminalConnectMatch = command.match(/^(connect|open)\s+(terminal|term|console)/i);
+                let terminalSendMatch = command.match(/^(send|run|execute|type)\s+(in|to)?\s*(terminal|term|console)/i);
+                let terminalDisconnectMatch = command.match(/^(disconnect|close)\s+(terminal|term|console)/i);
+                let terminalClearMatch = command.match(/^(clear)\s+(terminal|term|console)/i);
+                
+                if (terminalConnectMatch) {
+                    // Extract endpoint if provided
+                    const endpointMatch = command.match(/\b(to|with|at|using)\s+(.+)$/i);
+                    const endpoint = endpointMatch && endpointMatch[2] ? 
+                        endpointMatch[2].trim() : 'wss://echo.websocket.org';
+                    
+                    if (this.executeTerminalCommand('connect', endpoint)) {
+                        this.addSystemMessage(`Connected to terminal at ${endpoint}. You can now send commands using "send to terminal [command]".`);
+                        return;
+                    }
+                } else if (terminalSendMatch) {
+                    // Extract command to send
+                    const commandMatch = command.match(/^(?:send|run|execute|type)(?:\s+(?:in|to))?\s*(?:terminal|term|console)(?:[:]\s*|\s+)([\s\S]*)/i);
+                    const commandToSend = commandMatch && commandMatch[1] ? 
+                        commandMatch[1].trim() : '';
+                    
+                    if (commandToSend && this.executeTerminalCommand('send', commandToSend)) {
+                        this.addSystemMessage(`Command sent to terminal: "${commandToSend}"`);
+                        return;
+                    } else {
+                        this.addSystemMessage("Please specify a command to send to the terminal.");
+                        return;
+                    }
+                } else if (terminalDisconnectMatch) {
+                    if (this.executeTerminalCommand('disconnect')) {
+                        this.addSystemMessage("Disconnected from terminal.");
+                        return;
+                    }
+                } else if (terminalClearMatch) {
+                    if (this.executeTerminalCommand('clear')) {
+                        this.addSystemMessage("Terminal cleared.");
+                        return;
+                    }
+                }
+                
                 // Convert chat-style commands to terminal commands
                 let terminalCommand = command;
                 
@@ -415,6 +493,30 @@ document.addEventListener('DOMContentLoaded', function() {
                     } else {
                         terminalCommand = 'markdown theme dark'; // Default
                     }
+                } 
+                // Terminal commands
+                else if (command.match(/^(connect|open) (terminal|term|console)/i)) {
+                    // Extract endpoint if provided
+                    const endpointMatch = command.match(/\b(to|with|at|using)\s+(.+)$/i);
+                    const endpoint = endpointMatch && endpointMatch[2] ? 
+                        endpointMatch[2].trim() : 'wss://echo.websocket.org';
+                    
+                    terminalCommand = `terminal connect ${endpoint}`;
+                } else if (command.match(/^(send|run|execute|type) (in|to)? (terminal|term|console)/i)) {
+                    // Extract command to send
+                    const commandMatch = command.match(/^(?:send|run|execute|type)(?:\s+(?:in|to))?\s*(?:terminal|term|console)(?:[:]\s*|\s+)([\s\S]*)/i);
+                    const commandToSend = commandMatch && commandMatch[1] ? 
+                        commandMatch[1].trim() : '';
+                    
+                    if (commandToSend) {
+                        terminalCommand = `terminal send ${commandToSend}`;
+                    } else {
+                        terminalCommand = `terminal send`;
+                    }
+                } else if (command.match(/^(disconnect|close) (terminal|term|console)/i)) {
+                    terminalCommand = 'terminal disconnect';
+                } else if (command.match(/^(clear) (terminal|term|console)/i)) {
+                    terminalCommand = 'terminal clear';
                 } else if (command.match(/^(draw|create|make) (a |the )?(pattern|shape)/i)) {
                     terminalCommand = 'draw pattern';
                 } else if (command.match(/^(help|commands|what can you do)/i)) {
@@ -453,6 +555,20 @@ document.addEventListener('DOMContentLoaded', function() {
                                 response = "I've rendered the markdown for you. Try scrolling or changing the theme if you'd like.";
                             }
                         } 
+                        // Terminal responses
+                        else if (command.match(/(terminal|term|console)/i)) {
+                            if (command.match(/connect|open/i)) {
+                                response = "Terminal connection established. You can send commands with 'send to terminal [command]'.";
+                            } else if (command.match(/send|run|execute|type/i)) {
+                                response = "Command sent to terminal.";
+                            } else if (command.match(/disconnect|close/i)) {
+                                response = "Terminal connection closed.";
+                            } else if (command.match(/clear/i)) {
+                                response = "Terminal cleared.";
+                            } else {
+                                response = "Terminal command processed.";
+                            }
+                        }
                         else if (command.includes('pattern') || command.includes('shape')) {
                             response = "I've created a pattern for you! You can try 'draw random' for a different shape.";
                         } else if (command.includes('help')) {
@@ -461,6 +577,7 @@ document.addEventListener('DOMContentLoaded', function() {
 - Create charts: "create pie chart", "bar chart", "line chart"
 - Display code with syntax highlighting: "show code [your code]"
 - Render markdown: "show markdown [text]" or "load markdown from [url]"
+- Connect to terminals: "connect terminal" or "send to terminal [command]"
 - Draw shapes and patterns: "draw pattern", "draw random"
 - Clear the canvas: "clear canvas"`;
                         } else {
@@ -556,6 +673,43 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log("Direct renderMarkdown result:", result);
         } catch (error) {
             console.error("Error calling renderMarkdown directly:", error);
+        }
+    };
+    
+    // Add debugging function for terminal module
+    window.debugTerminalModule = function() {
+        console.log("=== TERMINAL MODULE DEBUG ===");
+        
+        if (!window.Commands) {
+            console.error("Commands object not available");
+            return;
+        }
+        
+        if (!window.Commands.canvasManager) {
+            console.error("Canvas Manager not available");
+            return;
+        }
+        
+        const cm = window.Commands.canvasManager;
+        console.log("Available modules:", Object.keys(cm.modules || {}));
+        
+        const terminalModule = cm.getModule('terminal');
+        if (!terminalModule) {
+            console.error("Terminal module not found in canvas manager");
+            return;
+        }
+        
+        console.log("Terminal module properties:", Object.getOwnPropertyNames(terminalModule));
+        console.log("Terminal module prototype methods:", 
+                   Object.getOwnPropertyNames(Object.getPrototypeOf(terminalModule)));
+        
+        // Test the module with basic functions
+        console.log("Testing terminal module directly:");
+        try {
+            // Just report connection status
+            console.log("Terminal connected:", terminalModule.connected);
+        } catch (error) {
+            console.error("Error accessing terminal module:", error);
         }
     };
     
