@@ -64,6 +64,12 @@ class StreamingTerminalModule extends CanvasModule {
             }
             this.terminalBuffer.push(row);
         }
+        
+        // Initialize terminal output history
+        this.terminalOutput = [
+            "Terminal initialized",
+            "Type 'help' for available commands"
+        ];
     }
     
     async init(canvas, ctx, manager) {
@@ -128,153 +134,66 @@ class StreamingTerminalModule extends CanvasModule {
         this.ctx.fillStyle = this.bgColor;
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
         
-        if (!state) {
-            // Draw error state
-            this.ctx.fillStyle = this.textColor;
-            this.ctx.font = `${this.fontSize}px ${this.fontFamily}`;
-            this.ctx.textBaseline = 'top';
-            this.ctx.fillText('Terminal Ready', 10, 10);
-            return;
+        // Add terminal output history tracking if it doesn't exist
+        if (!this.terminalOutput) {
+            this.terminalOutput = [];
         }
         
-        try {
-            let terminalState;
-            
-            if (typeof state === 'string') {
-                try {
-                    // Try to parse as JSON first
-                    terminalState = JSON.parse(state);
-                } catch (e) {
-                    // If not valid JSON, it might be the string format from the AssemblyScript code
-                    // Parse the formatted string to extract relevant information
-                    const lines = state.split(/\r?\n/);
-                    const parsedState = { cells: [] };
-                    
-                    // Create a cursor at position 0,0
-                    parsedState.cursor = { x: 0, y: 0, visible: true };
-                    
-                    // Parse lines into cells
-                    for (let y = 0; y < lines.length && y < this.rows; y++) {
-                        const line = lines[y];
-                        for (let x = 0; x < line.length && x < this.cols; x++) {
-                            parsedState.cells.push({
-                                x,
-                                y,
-                                char: line[x],
-                                fgColor: this.textColor,
-                                bgColor: this.bgColor,
-                                bold: false,
-                                italic: false,
-                                underline: false
-                            });
+        // Process new lines from the state to add to output history
+        if (state) {
+            try {
+                // If state is a string, it might be a console message
+                if (typeof state === 'string' && state.trim() !== '') {
+                    // Check if this is a new message we haven't displayed yet
+                    if (!this.terminalOutput.includes(state.trim())) {
+                        this.terminalOutput.push(state.trim());
+                        // Limit history to prevent overflow
+                        if (this.terminalOutput.length > 100) {
+                            this.terminalOutput.shift();
                         }
                     }
-                    
-                    terminalState = parsedState;
-                }
-            } else {
-                terminalState = state;
-            }
-            
-            // If the state doesn't have cells array, try to create one
-            if (!terminalState.cells || !Array.isArray(terminalState.cells)) {
-                terminalState.cells = [];
-                
-                // If we have a text description from the AssemblyScript module
-                if (terminalState.text || (typeof state === 'string' && state.length > 0)) {
-                    const text = terminalState.text || state;
-                    const lines = text.split(/\r?\n/);
-                    
-                    for (let y = 0; y < lines.length && y < this.rows; y++) {
-                        const line = lines[y];
-                        for (let x = 0; x < line.length && x < this.cols; x++) {
-                            terminalState.cells.push({
-                                x,
-                                y,
-                                char: line[x],
-                                fgColor: this.textColor,
-                                bgColor: this.bgColor,
-                                bold: false,
-                                italic: false,
-                                underline: false
-                            });
+                } else if (typeof state === 'object') {
+                    // If it's an object, it might have text or messages
+                    if (state.text && typeof state.text === 'string' && state.text.trim() !== '') {
+                        if (!this.terminalOutput.includes(state.text.trim())) {
+                            this.terminalOutput.push(state.text.trim());
+                            // Limit history
+                            if (this.terminalOutput.length > 100) {
+                                this.terminalOutput.shift();
+                            }
                         }
                     }
                 }
+            } catch (e) {
+                console.error('Error processing terminal state for output:', e);
             }
-            
-            // Make sure cursor exists
-            if (!terminalState.cursor) {
-                terminalState.cursor = { x: 0, y: 0, visible: true };
-            }
-            
-            // Render cells
-            if (terminalState.cells && Array.isArray(terminalState.cells)) {
-                // Only draw the first 2000 cells to prevent performance issues
-                const cellsToDraw = terminalState.cells.slice(0, 2000);
-                
-                for (let i = 0; i < cellsToDraw.length; i++) {
-                    const cell = cellsToDraw[i];
-                    
-                    // Skip invalid cells
-                    if (!cell || typeof cell.x !== 'number' || typeof cell.y !== 'number') {
-                        continue;
-                    }
-                    
-                    const x = cell.x, y = cell.y;
-                    
-                    // Skip out of bounds cells
-                    if (x < 0 || y < 0 || x >= this.cols || y >= this.rows) {
-                        continue;
-                    }
-                    
-                    if (cell.bgColor && cell.bgColor !== this.bgColor) {
-                        this.ctx.fillStyle = cell.bgColor;
-                        this.ctx.fillRect(x * this.charWidth, y * this.charHeight, this.charWidth, this.charHeight);
-                    }
-                    
-                    if (!cell.char || cell.char === ' ') continue;
-                    
-                    this.ctx.fillStyle = cell.fgColor || this.textColor;
-                    let fontStyle = '';
-                    if (cell.bold) fontStyle += 'bold ';
-                    if (cell.italic) fontStyle += 'italic ';
-                    this.ctx.font = `${fontStyle}${this.fontSize}px ${this.fontFamily}`;
-                    this.ctx.textBaseline = 'top';
-                    this.ctx.fillText(cell.char, x * this.charWidth, y * this.charHeight);
-                    
-                    if (cell.underline) {
-                        this.ctx.fillRect(x * this.charWidth, (y + 1) * this.charHeight - 2, this.charWidth, 1);
-                    }
+        }
+        
+        // Also add any console.log messages from the WASM bridge to the output
+        if (this.wasmBridge && this.wasmBridge.consoleMessages && Array.isArray(this.wasmBridge.consoleMessages)) {
+            for (const msg of this.wasmBridge.consoleMessages) {
+                if (!this.terminalOutput.includes(msg)) {
+                    this.terminalOutput.push(msg);
                 }
             }
-            
-            // Render cursor
-            if (terminalState.cursor && terminalState.cursor.visible) {
-                const x = terminalState.cursor.x, y = terminalState.cursor.y;
-                
-                // Skip out of bounds cursor
-                if (x >= 0 && y >= 0 && x < this.cols && y < this.rows) {
-                    this.ctx.fillStyle = this.cursorColor;
-                    this.ctx.fillRect(x * this.charWidth, y * this.charHeight, this.charWidth, this.charHeight);
-                    
-                    if (terminalState.cells && Array.isArray(terminalState.cells)) {
-                        const cursorCell = terminalState.cells.find(cell => cell && cell.x === x && cell.y === y);
-                        if (cursorCell && cursorCell.char && cursorCell.char !== ' ') {
-                            this.ctx.fillStyle = cursorCell.bgColor || this.bgColor;
-                            this.ctx.fillText(cursorCell.char, x * this.charWidth, y * this.charHeight);
-                        }
-                    }
-                }
-            }
-        } catch (error) {
-            console.error('Error rendering terminal state:', error);
-            
-            // Show error message in terminal
-            this.ctx.fillStyle = '#FF0000';
-            this.ctx.font = `${this.fontSize}px ${this.fontFamily}`;
-            this.ctx.textBaseline = 'top';
-            this.ctx.fillText('Terminal Error - Check Console', 10, 10);
+            // Clear processed messages
+            this.wasmBridge.consoleMessages = [];
+        }
+        
+        // Render terminal output
+        this.ctx.fillStyle = this.textColor;
+        this.ctx.font = `${this.fontSize}px ${this.fontFamily}`;
+        this.ctx.textBaseline = 'top';
+        
+        // Calculate visible area
+        const visibleRows = Math.floor((this.canvas.height - 40) / this.charHeight); // Leave space for command line
+        const startRow = Math.max(0, this.terminalOutput.length - visibleRows);
+        
+        // Render output rows
+        for (let i = startRow; i < this.terminalOutput.length; i++) {
+            const row = this.terminalOutput[i];
+            const y = (i - startRow) * this.charHeight + 10;
+            this.ctx.fillText(row, 10, y);
         }
     }
     
@@ -749,9 +668,21 @@ class StreamingTerminalModule extends CanvasModule {
         if (!this.connected || !this.connection) return false;
         try {
             this.connection.send(data);
+            
+            // Add sent message to terminal output
+            if (!this.terminalOutput) this.terminalOutput = [];
+            this.terminalOutput.push(`Sent: ${data}`);
+            
+            this.render();
             return true;
         } catch (error) {
             console.error('Error sending data:', error);
+            
+            // Add error message to terminal output
+            if (!this.terminalOutput) this.terminalOutput = [];
+            this.terminalOutput.push(`Error sending data: ${error.message}`);
+            
+            this.render();
             return false;
         }
     }
