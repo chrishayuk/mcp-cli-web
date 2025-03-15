@@ -354,6 +354,18 @@ class StreamingTerminalModule extends CanvasModule {
         super.activate();
         this.manager?.updateCanvasStatus('success', 'Terminal Active');
         this.enableDirectInput();
+        
+        // Always render when activated to show current state
+        this.render();
+        
+        // Ensure input is focused when activated
+        if (this.inputElement) {
+            setTimeout(() => {
+                this.inputElement.focus();
+                this.inputElement.click();
+            }, 100);
+        }
+        
         return this;
     }
     
@@ -374,6 +386,59 @@ class StreamingTerminalModule extends CanvasModule {
                 console.error('Canvas container not found');
                 return;
             }
+            
+            // Create a visible command line at the bottom of the terminal
+            this.commandLine = document.createElement('div');
+            this.commandLine.className = 'terminal-command-line';
+            this.commandLine.style.cssText = `
+                position: absolute;
+                bottom: 30px;
+                left: 10px;
+                right: 10px;
+                height: 24px;
+                background: rgba(0, 0, 0, 0.8);
+                color: #0f0;
+                padding: 2px 5px;
+                border-radius: 4px;
+                font-family: monospace;
+                font-size: 14px;
+                z-index: 102;
+                display: flex;
+                align-items: center;
+            `;
+            
+            // Add prompt
+            const promptSpan = document.createElement('span');
+            promptSpan.textContent = '> ';
+            promptSpan.style.color = '#0f0';
+            promptSpan.style.marginRight = '5px';
+            this.commandLine.appendChild(promptSpan);
+            
+            // Add visible input
+            this.visibleInput = document.createElement('span');
+            this.visibleInput.textContent = '';
+            this.visibleInput.style.color = '#fff';
+            this.commandLine.appendChild(this.visibleInput);
+            
+            // Add blinking cursor
+            this.cursor = document.createElement('span');
+            this.cursor.textContent = '█';
+            this.cursor.style.color = '#fff';
+            this.cursor.style.animation = 'blink 1s step-end infinite';
+            this.commandLine.appendChild(this.cursor);
+            
+            // Add style for cursor blinking
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes blink {
+                    0% { opacity: 1; }
+                    50% { opacity: 0; }
+                    100% { opacity: 1; }
+                }
+            `;
+            document.head.appendChild(style);
+            
+            // Overlay for capturing clicks
             this.inputOverlay = document.createElement('div');
             this.inputOverlay.className = 'terminal-input-overlay';
             this.inputOverlay.style.cssText = `
@@ -386,6 +451,8 @@ class StreamingTerminalModule extends CanvasModule {
                 cursor: text;
                 z-index: 100;
             `;
+            
+            // Hidden input element for capturing keystrokes
             this.inputElement = document.createElement('input');
             this.inputElement.className = 'terminal-direct-input';
             this.inputElement.type = 'text';
@@ -410,59 +477,109 @@ class StreamingTerminalModule extends CanvasModule {
                 color: transparent;
                 font-family: monospace;
             `;
+            
             this.statusIndicator = document.createElement('div');
             this.statusIndicator.className = 'terminal-status';
             this.statusIndicator.textContent = 'Terminal Ready';
             this.statusIndicator.style.cssText = `
                 position: absolute;
-                bottom: 10px;
+                bottom: 5px;
                 right: 10px;
                 background: rgba(0, 0, 0, 0.7);
                 color: #0f0;
-                padding: 5px 10px;
+                padding: 2px 6px;
                 border-radius: 4px;
                 font-family: monospace;
-                font-size: 12px;
+                font-size: 10px;
                 z-index: 102;
             `;
-            const focusInstructions = document.createElement('div');
-            focusInstructions.className = 'terminal-focus-instructions';
-            focusInstructions.textContent = 'Click to type commands';
-            focusInstructions.style.cssText = `
-                position: absolute;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                background: rgba(0, 0, 0, 0.7);
-                color: #0f0;
-                padding: 10px 20px;
-                border-radius: 4px;
-                font-family: monospace;
-                font-size: 14px;
-                z-index: 103;
-                pointer-events: none;
-                opacity: 0.7;
-            `;
+            
+            // Event listener for clicking in the terminal
             this.inputOverlay.addEventListener('click', () => {
                 console.log('Input overlay clicked, focusing input');
                 this.inputElement.focus();
-                focusInstructions.style.display = 'none';
             });
-            this.inputElement.addEventListener('keydown', this.handleKeyDown);
-            this.inputElement.addEventListener('paste', this.handlePaste);
+            
+            // Event listener for key input
             this.inputElement.addEventListener('input', (e) => {
-                const text = e.data || '';
-                if (text && this.connected) {
-                    this.wasmBridge.processCommand(text);
+                // Update visible text
+                this.visibleInput.textContent = this.inputElement.value;
+            });
+            
+            // Handle special keys
+            this.inputElement.addEventListener('keydown', (e) => {
+                // Handle Enter to process command
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const command = this.inputElement.value;
+                    console.log('Processing command:', command);
+                    
+                    if (command && command.trim()) {
+                        if (this.wasmAvailable) {
+                            this.wasmBridge.processCommand(command);
+                        } else {
+                            console.log('Command entered (no WASM):', command);
+                        }
+                    }
+                    
+                    // Clear input
                     this.inputElement.value = '';
+                    this.visibleInput.textContent = '';
+                    
+                    // Ensure terminal renders updated state
+                    setTimeout(() => this.render(), 10);
+                    return;
+                }
+                
+                // Handle Backspace (special case since input event doesn't capture it)
+                if (e.key === 'Backspace') {
+                    // Let the native handling occur, then update visible input
+                    setTimeout(() => {
+                        this.visibleInput.textContent = this.inputElement.value;
+                    }, 0);
+                }
+                
+                // Handle Up/Down for command history
+                if (e.key === 'ArrowUp' && this.wasmAvailable) {
+                    e.preventDefault();
+                    const prevCmd = this.getPreviousCommand();
+                    if (prevCmd) {
+                        this.inputElement.value = prevCmd;
+                        this.visibleInput.textContent = prevCmd;
+                    }
+                    return;
+                }
+                
+                if (e.key === 'ArrowDown' && this.wasmAvailable) {
+                    e.preventDefault();
+                    const nextCmd = this.getNextCommand();
+                    if (nextCmd !== undefined) {
+                        this.inputElement.value = nextCmd;
+                        this.visibleInput.textContent = nextCmd;
+                    } else {
+                        this.inputElement.value = '';
+                        this.visibleInput.textContent = '';
+                    }
+                    return;
                 }
             });
+            
+            // Add elements to container
             canvasContainer.appendChild(this.inputOverlay);
             canvasContainer.appendChild(this.inputElement);
+            canvasContainer.appendChild(this.commandLine);
             canvasContainer.appendChild(this.statusIndicator);
-            canvasContainer.appendChild(focusInstructions);
+            
             this.directInputEnabled = true;
-            setTimeout(() => { this.inputElement.focus(); }, 100);
+            
+            // Focus input and remind about it periodically
+            this.inputElement.focus();
+            this.focusInterval = setInterval(() => {
+                if (document.activeElement !== this.inputElement) {
+                    this.inputElement.focus();
+                }
+            }, 1000);
+            
             console.log('Direct terminal input enabled');
         } catch (error) {
             console.error('Error enabling direct input:', error);
@@ -472,6 +589,11 @@ class StreamingTerminalModule extends CanvasModule {
     disableDirectInput() {
         if (!this.directInputEnabled) return;
         try {
+            if (this.focusInterval) {
+                clearInterval(this.focusInterval);
+                this.focusInterval = null;
+            }
+            
             if (this.inputOverlay && this.inputOverlay.parentElement) {
                 this.inputOverlay.parentElement.removeChild(this.inputOverlay);
             }
@@ -481,13 +603,17 @@ class StreamingTerminalModule extends CanvasModule {
             if (this.statusIndicator && this.statusIndicator.parentElement) {
                 this.statusIndicator.parentElement.removeChild(this.statusIndicator);
             }
-            const focusInstructions = document.querySelector('.terminal-focus-instructions');
-            if (focusInstructions && focusInstructions.parentElement) {
-                focusInstructions.parentElement.removeChild(focusInstructions);
+            if (this.commandLine && this.commandLine.parentElement) {
+                this.commandLine.parentElement.removeChild(this.commandLine);
             }
+            
             this.inputOverlay = null;
             this.inputElement = null;
             this.statusIndicator = null;
+            this.commandLine = null;
+            this.visibleInput = null;
+            this.cursor = null;
+            
             this.directInputEnabled = false;
             console.log('Direct terminal input disabled');
         } catch (error) {
@@ -496,69 +622,36 @@ class StreamingTerminalModule extends CanvasModule {
     }
     
     handleKeyDown(event) {
-        if (!this.connected) return;
-        if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) {
+        // For special keys only
+        if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab', 'Escape'].includes(event.key)) {
             event.preventDefault();
-        }
-        let data = null;
-        switch (event.key) {
-            case 'Enter':
-                data = '\r';
-                event.preventDefault();
-                break;
-            case 'Backspace':
-                data = '\b';
-                break;
-            case 'Tab':
-                data = '\t';
-                event.preventDefault();
-                break;
-            case 'Escape':
-                data = '\x1b';
-                break;
-            case 'ArrowUp':
-                if (this.wasmBridge.getPreviousCommand) {
-                    const prevCmd = this.getPreviousCommand();
-                    if (prevCmd) {
-                        this.inputElement.value = prevCmd;
-                    }
-                    event.preventDefault();
-                    return;
+            
+            // Get command history if arrow up/down
+            if (event.key === 'ArrowUp' && this.wasmAvailable) {
+                const prevCmd = this.getPreviousCommand();
+                if (prevCmd) {
+                    this.inputElement.value = prevCmd;
                 }
-                data = '\x1b[A';
-                break;
-            case 'ArrowDown':
-                if (this.wasmBridge.getNextCommand) {
-                    const nextCmd = this.getNextCommand();
-                    if (nextCmd !== undefined) {
-                        this.inputElement.value = nextCmd;
-                    }
-                    event.preventDefault();
-                    return;
+                return;
+            }
+            
+            if (event.key === 'ArrowDown' && this.wasmAvailable) {
+                const nextCmd = this.getNextCommand();
+                if (nextCmd !== undefined) {
+                    this.inputElement.value = nextCmd;
                 }
-                data = '\x1b[B';
-                break;
-            case 'ArrowRight':
-                data = '\x1b[C';
-                break;
-            case 'ArrowLeft':
-                data = '\x1b[D';
-                break;
-            default:
-                if (event.ctrlKey && event.key.length === 1) {
-                    const charCode = event.key.toUpperCase().charCodeAt(0) - 64;
-                    if (charCode >= 1 && charCode <= 26) {
-                        data = String.fromCharCode(charCode);
-                        event.preventDefault();
-                    }
+                return;
+            }
+            
+            // Handle control key combinations
+            if (event.ctrlKey && event.key.length === 1) {
+                const charCode = event.key.toUpperCase().charCodeAt(0) - 64;
+                if (charCode >= 1 && charCode <= 26) {
+                    const ctrlChar = String.fromCharCode(charCode);
+                    console.log('Ctrl key combination:', ctrlChar);
+                    // Process ctrl commands here if needed
                 }
-                break;
-        }
-        if (data) {
-            this.wasmBridge.processCommand(data);
-            this.sendData(data);
-            this.render();
-            event.preventDefault();
+            }
         }
     }
     
@@ -672,6 +765,11 @@ class StreamingTerminalModule extends CanvasModule {
             this.renderTerminalState(state);
         } else {
             this.renderFallbackTerminal();
+        }
+        
+        // When rendering completes, make sure the input element is in focus
+        if (this.inputElement) {
+            setTimeout(() => this.inputElement.focus(), 0);
         }
         
         return this;
