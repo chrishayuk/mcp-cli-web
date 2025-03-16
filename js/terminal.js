@@ -1,4 +1,5 @@
 /**
+ * terminal.js
  * Terminal functionality for the Canvas Terminal
  */
 class Terminal {

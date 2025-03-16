@@ -1,4 +1,5 @@
 /**
+ * js/canvas/modules/image-module/html-image-module.js
  * Enhanced HTML-based Image Module
  * Replaces the canvas-based image module with a cleaner HTML experience
  * similar to the code editor for a more modern UI feel

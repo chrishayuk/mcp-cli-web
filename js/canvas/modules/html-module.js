@@ -1,4 +1,5 @@
 /**
+ * js/canvas/modules/html-module.js
  * HTML Module
  * Handles displaying and manipulating HTML content in a designated container.
  * This module follows the same interface as your canvas modules so it can

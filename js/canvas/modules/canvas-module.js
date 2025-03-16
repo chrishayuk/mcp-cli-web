@@ -1,5 +1,5 @@
 /**
- * js/canvas/canvas-module.js
+ * js/canvas/modules/canvas-module.js
  * Base Canvas Module Interface with Title Support
  * All canvas visualization modules should extend this class
  */
