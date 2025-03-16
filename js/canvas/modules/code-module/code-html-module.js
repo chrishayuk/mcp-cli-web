@@ -21,6 +21,7 @@ class CodeModule extends HtmlModule {
         this.editorCollapsed = false;
         this.resultsCollapsed = false;
         this.htmlContainer = null;
+        this.container = null;
         
         // Set default title for this module
         this.setModuleTitle('Code Display');
@@ -37,33 +38,7 @@ class CodeModule extends HtmlModule {
      * @returns {string} Title to display when module is active
      */
     getModuleTitle() {
-        // Basic implementation - return "Code Display"
         return 'Code Display';
-        
-        // Uncomment for language-specific titles:
-        /*
-        // For language-specific titles
-        if (this.language) {
-            const lang = this.language.toLowerCase();
-            
-            // Special handling for common languages
-            if (lang === 'javascript' || lang === 'js') {
-                return 'JavaScript Editor';
-            } else if (lang === 'python' || lang === 'py') {
-                return 'Python Editor';
-            } else if (lang === 'html') {
-                return 'HTML Editor';
-            } else if (lang === 'css') {
-                return 'CSS Editor';
-            } else {
-                // Generic format for other languages
-                return `${this.language.toUpperCase()} Editor`;
-            }
-        }
-        
-        // Default if no language is set
-        return 'Code Editor';
-        */
     }
     
     /**
@@ -74,9 +49,9 @@ class CodeModule extends HtmlModule {
     setModuleTitle(title) {
         this._moduleTitle = title;
         
-        // Update title immediately if we're active
-        if (this.isActive && this.manager && typeof this.manager.updateCanvasTitle === 'function') {
-            this.manager.updateCanvasTitle(title);
+        // Update title immediately if we're active using the new tab manager
+        if (this.isActive && this.manager && this.manager.tabManager) {
+            this.manager.tabManager.updateTabTitle(this.manager.activeCanvasId, title);
         }
         
         return this;
@@ -116,21 +91,25 @@ class CodeModule extends HtmlModule {
     
     /**
      * Activate the module.
-     * Shows code container and hides canvas.
+     * Expands the canvas, hides the base canvas element, and shows the code container.
      */
     activate() {
         super.activate();
         
-        // Update canvas status
+        // Explicitly expand the canvas section before proceeding.
+        if (this.manager && typeof this.manager.expandCanvasSection === 'function') {
+            this.manager.expandCanvasSection();
+        }
+        
+        // Update canvas status and hide instructions
         if (this.manager) {
             this.manager.updateCanvasStatus('success', 'Code Module Active');
             this.manager.hideInstructions();
             
-            // Update title using the manager's updateCanvasTitle method
-            if (typeof this.manager.updateCanvasTitle === 'function') {
-                this.manager.updateCanvasTitle(this.getModuleTitle());
+            // Update active tab title using the new tab manager
+            if (this.manager.tabManager) {
+                this.manager.tabManager.updateTabTitle(this.manager.activeCanvasId, this.getModuleTitle());
             } else {
-                // Fallback to direct DOM manipulation if the manager doesn't have updateCanvasTitle
                 const canvasTitle = document.getElementById('canvasTitle');
                 if (canvasTitle) {
                     canvasTitle.textContent = this.getModuleTitle();
@@ -138,23 +117,23 @@ class CodeModule extends HtmlModule {
             }
         }
         
-        // Hide canvas, show code container
+        // Hide the base canvas element
         const canvas = document.getElementById('canvas');
         if (canvas) {
             canvas.style.display = 'none';
         }
         
+        // Show the code container
         if (this.container) {
             this.container.style.display = 'flex';
         }
         
-        // If we have no code yet, add a placeholder
+        // If no code is present yet, add a placeholder and render
         if (!this.code) {
             this.code = '// Enter your code here\nconsole.log("Hello World");';
             this.render();
         }
         
-        // Log activation
         if (typeof terminal !== 'undefined') {
             terminal.addOutput(`[INFO] Code Module activated`);
         }
@@ -180,12 +159,10 @@ class CodeModule extends HtmlModule {
                         terminal.addOutput(`[INFO] Code language set to: ${this.language}`);
                     }
                     
-                    // Render with new language
                     const renderResult = this.render();
                     
-                    // Update title if we're active and using language-specific titles
-                    if (this.isActive && this.manager && typeof this.manager.updateCanvasTitle === 'function') {
-                        this.manager.updateCanvasTitle(this.getModuleTitle());
+                    if (this.isActive && this.manager && this.manager.tabManager) {
+                        this.manager.tabManager.updateTabTitle(this.manager.activeCanvasId, this.getModuleTitle());
                     }
                     
                     return renderResult;
@@ -262,9 +239,8 @@ class CodeModule extends HtmlModule {
         if (language) {
             this.language = language.toLowerCase();
             
-            // Update title if we have language-specific titles and we're active
-            if (this.isActive && this.manager && typeof this.manager.updateCanvasTitle === 'function') {
-                this.manager.updateCanvasTitle(this.getModuleTitle());
+            if (this.isActive && this.manager && this.manager.tabManager) {
+                this.manager.tabManager.updateTabTitle(this.manager.activeCanvasId, this.getModuleTitle());
             }
         }
         
@@ -293,7 +269,6 @@ class CodeModule extends HtmlModule {
                 this.container.classList.add('ide-theme-light');
                 break;
             default:
-                // Default to dark theme
                 this.container.classList.add('ide-theme-dark');
                 break;
         }
@@ -306,7 +281,7 @@ class CodeModule extends HtmlModule {
     }
     
     /**
-     * Update collapsible panels state without full re-render
+     * Update collapsible panels state without full re-render.
      */
     updateCollapsibleState() {
         const editorWrapper = this.container.querySelector('.ide-code-wrapper');
@@ -338,7 +313,7 @@ class CodeModule extends HtmlModule {
     }
     
     /**
-     * Generate line numbers for code display
+     * Generate line numbers for code display.
      */
     generateLineNumbers(code) {
         const lines = code.split('\n');
@@ -352,7 +327,7 @@ class CodeModule extends HtmlModule {
     }
     
     /**
-     * Render the code editor interface
+     * Render the code editor interface.
      */
     render() {
         if (!this.container) return this;
@@ -440,8 +415,7 @@ class CodeModule extends HtmlModule {
         if (this.editorCollapsed) wrapper.classList.add('collapsed');
         
         const editor = document.createElement('div');
-        editor.className = this.showLineNumbers ? 
-            'ide-code-editor with-line-numbers' : 'ide-code-editor';
+        editor.className = this.showLineNumbers ? 'ide-code-editor with-line-numbers' : 'ide-code-editor';
         
         // Terminal scanlines effect
         const scanlines = document.createElement('div');
@@ -468,8 +442,6 @@ class CodeModule extends HtmlModule {
         codeElem.style.outline = 'none';
         codeElem.addEventListener('input', (e) => {
             this.code = e.target.textContent;
-            
-            // Update line numbers when code changes
             if (this.showLineNumbers) {
                 const lineNumbers = editor.querySelector('.ide-line-numbers');
                 if (lineNumbers) {
@@ -539,7 +511,7 @@ class CodeModule extends HtmlModule {
     }
     
     /**
-     * Execute code and show results
+     * Execute code and show results.
      */
     executeCode() {
         const resultArea = this.container.querySelector('.ide-result-area');
@@ -550,7 +522,6 @@ class CodeModule extends HtmlModule {
         // Update status to running
         statusItem.innerHTML = '<span class="execution-running">Running...</span>';
         
-        // Make sure results panel is visible
         if (this.resultsCollapsed) {
             this.resultsCollapsed = false;
             this.updateCollapsibleState();
@@ -560,13 +531,11 @@ class CodeModule extends HtmlModule {
             terminal.addOutput(`[INFO] Executing ${this.language} code...`);
         }
         
-        // Show execution animation
         setTimeout(() => {
             let outputText = '';
             
             if (this.language.toLowerCase() === 'javascript') {
                 try {
-                    // Capture console.log output
                     const originalLog = console.log;
                     const logs = [];
                     
@@ -576,7 +545,6 @@ class CodeModule extends HtmlModule {
                     };
                     
                     try {
-                        // Execute code safely
                         const result = new Function(this.code)();
                         
                         if (logs.length > 0) {
@@ -593,14 +561,12 @@ class CodeModule extends HtmlModule {
                         statusItem.innerHTML = '<span class="execution-error">Error</span>';
                     }
                     
-                    // Restore console.log
                     console.log = originalLog;
                 } catch (e) {
                     outputText = `Could not execute code: ${e.message}`;
                     statusItem.innerHTML = '<span class="execution-error">Error</span>';
                 }
             } else {
-                // For non-JavaScript languages, simulate execution
                 outputText = `Simulated execution for ${this.language}:\n`;
                 outputText += `Language: ${this.language}\n`;
                 outputText += `Lines of code: ${this.code.split('\n').length}\n`;
@@ -611,7 +577,6 @@ class CodeModule extends HtmlModule {
                 statusItem.innerHTML = '<span class="execution-success">Simulated</span>';
             }
             
-            // Format the output
             resultArea.innerHTML = '';
             const pre = document.createElement('pre');
             pre.textContent = outputText;

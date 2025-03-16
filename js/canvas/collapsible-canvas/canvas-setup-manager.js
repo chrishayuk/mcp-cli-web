@@ -3,40 +3,21 @@
  * Component initialization for collapsible canvas system
  */
 
-/**
- * Class to manage component setup and initialization
- */
 class CanvasSetupManager {
-    /**
-     * Create a setup manager
-     * @param {CollapsibleCanvasManager} canvasManager - Parent canvas manager
-     */
     constructor(canvasManager) {
         this.canvasManager = canvasManager;
         this._shortcutsDisplay = null;
         this._shortcutsToggle = null;
     }
     
-    /**
-     * Initialize all canvas system components
-     */
     initialize() {
         console.log("Initializing Canvas Setup Manager...");
         
         try {
-            // Initialize tab system
             this.setupCanvasTabs();
-            
-            // Initialize layout controls
             this.setupLayoutControls();
-            
-            // Setup module switcher
             this.setupModuleSwitcher();
-            
-            // Setup keyboard shortcuts
             this.setupKeyboardShortcuts();
-            
-            // Setup content monitors
             this.setupContentMonitors();
             
             console.log("Canvas Setup Manager initialized");
@@ -45,17 +26,11 @@ class CanvasSetupManager {
         }
     }
     
-    /**
-     * Set up canvas tabs system
-     */
     setupCanvasTabs() {
-        // No setup required - the DOM manager has already ensured tabsList exists
         console.log("Setting up canvas tabs system");
+        // No extra code needed; DOM manager ensures tabs exist
     }
     
-    /**
-     * Set up layout controls
-     */
     setupLayoutControls() {
         console.log("Setting up layout controls");
         const { mainContainer, canvasWindow, terminalWindow } = this.canvasManager;
@@ -87,7 +62,7 @@ class CanvasSetupManager {
             const terminalWidth = parseInt(getComputedStyle(terminalWindow).width, 10);
             const canvasWidth = parseInt(getComputedStyle(canvasWindow).width, 10);
             
-            // Set new widths based on delta
+            // Set new widths
             terminalWindow.style.width = `${terminalWidth - deltaX}px`;
             canvasWindow.style.width = `${canvasWidth + deltaX}px`;
             
@@ -115,20 +90,16 @@ class CanvasSetupManager {
         }
     }
     
-    /**
-     * Set up module switcher
-     */
     setupModuleSwitcher() {
         console.log("Setting up module switcher");
         
-        // Get reference to the canvas titlebar
         const canvasTitlebar = document.querySelector('.canvas-window .canvas-titlebar');
         if (!canvasTitlebar) {
             console.error("Cannot set up module switcher - titlebar not found");
             return;
         }
         
-        // Check if module switcher already exists and remove it to recreate
+        // Remove existing switcher if present
         const existingSwitcher = canvasTitlebar.querySelector('.module-switcher');
         if (existingSwitcher) {
             existingSwitcher.remove();
@@ -156,6 +127,8 @@ class CanvasSetupManager {
             button.innerHTML = `<i class="fas fa-${module.icon}"></i>`;
             button.title = module.title;
             
+            // If you do want the module to open on click, you can keep these lines:
+            // Otherwise, comment them out to only open via slash command or bubble
             button.addEventListener('click', () => {
                 this.canvasManager.expandCanvasSection();
                 this.canvasManager.activateModule(module.name);
@@ -164,71 +137,56 @@ class CanvasSetupManager {
             moduleSwitcher.appendChild(button);
         });
         
-        // Insert module switcher after canvas title
+        // Insert module switcher in the titlebar
         const titleElement = canvasTitlebar.querySelector('.canvas-title');
         if (titleElement) {
-            // Force insertion right after the title element
             if (titleElement.nextSibling) {
                 canvasTitlebar.insertBefore(moduleSwitcher, titleElement.nextSibling);
             } else {
                 canvasTitlebar.appendChild(moduleSwitcher);
             }
-            
-            console.log("Module switcher added after title element");
         } else {
-            // Insert at the beginning of canvas titlebar if no title element
             if (canvasTitlebar.firstChild) {
                 canvasTitlebar.insertBefore(moduleSwitcher, canvasTitlebar.firstChild);
             } else {
                 canvasTitlebar.appendChild(moduleSwitcher);
             }
-            
-            console.log("Module switcher added to canvas titlebar");
         }
+        
+        console.log("Module switcher added to canvas titlebar");
         
         // Store reference for updating active state
         this.canvasManager.moduleSwitcher = moduleSwitcher;
         
-        // Set active module based on canvasManager.currentModule
+        // If there's an already active module, mark its button
         if (this.canvasManager.currentModule && this.canvasManager.currentModule.moduleName) {
             this.updateModuleSwitcherActiveState(this.canvasManager.currentModule.moduleName);
         }
     }
 
-    /**
-     * Update module switcher active state
-     */
     updateModuleSwitcherActiveState(moduleName) {
         if (!this.canvasManager.moduleSwitcher) return;
-        
-        // Reset all buttons
         const buttons = this.canvasManager.moduleSwitcher.querySelectorAll('.module-button');
-        buttons.forEach(button => {
-            button.classList.remove('active');
-        });
+        buttons.forEach(button => button.classList.remove('active'));
         
-        // Set active button
         const activeButton = this.canvasManager.moduleSwitcher.querySelector(`.module-button[data-module="${moduleName}"]`);
         if (activeButton) {
             activeButton.classList.add('active');
         }
     }
     
-    /**
-     * Set up keyboard shortcuts
-     */
     setupKeyboardShortcuts() {
         console.log("Setting up keyboard shortcuts");
         const manager = this.canvasManager;
         
         document.addEventListener('keydown', (e) => {
-            // Ctrl+T to create new canvas
+            // Ctrl+T -> new canvas
             if (e.ctrlKey && e.key === 't') {
                 e.preventDefault();
                 manager.addNewCanvas('New Canvas');
             }
             
-            // Ctrl+W to close current canvas
+            // Ctrl+W -> close current canvas
             if (e.ctrlKey && e.key === 'w') {
                 e.preventDefault();
                 if (manager.activeCanvasId) {
@@ -236,7 +194,7 @@ class CanvasSetupManager {
                 }
             }
             
-            // Ctrl+Tab to switch canvases
+            // Ctrl+Tab -> switch canvases
             if (e.ctrlKey && e.key === 'Tab') {
                 e.preventDefault();
                 const canvases = manager.canvasInstances;
@@ -247,41 +205,32 @@ class CanvasSetupManager {
                 }
             }
             
-            // Escape to collapse canvas section
+            // Escape -> collapse (if no modal is open)
             if (e.key === 'Escape' && !e.ctrlKey && !e.altKey && !e.shiftKey) {
-                // Only collapse if no modal is open
-                const activeModal = document.querySelector('.modal.active, .dialog.active, .popup.active, .context-menu[style*="display: block"]');
+                const activeModal = document.querySelector(
+                  '.modal.active, .dialog.active, .popup.active, .context-menu[style*="display: block"]'
+                );
                 if (!activeModal) {
                     manager.collapseCanvasSection();
                 }
             }
         });
         
-        // Create a more compact keyboard shortcuts display
         this.setupKeyboardShortcutsDisplay();
     }
     
-    /**
-     * Set up keyboard shortcuts display
-     */
     setupKeyboardShortcutsDisplay() {
-        // Remove any existing keyboard shortcuts display
+        // Remove existing elements
         const existingShortcuts = document.querySelector('.keyboard-shortcut-hints');
-        if (existingShortcuts) {
-            existingShortcuts.remove();
-        }
+        if (existingShortcuts) existingShortcuts.remove();
         
         const existingCompact = document.querySelector('.keyboard-shortcut-compact');
-        if (existingCompact) {
-            existingCompact.remove();
-        }
+        if (existingCompact) existingCompact.remove();
         
         const existingToggle = document.querySelector('.keyboard-shortcut-toggle');
-        if (existingToggle) {
-            existingToggle.remove();
-        }
+        if (existingToggle) existingToggle.remove();
         
-        // Create a more compact keyboard shortcuts display
+        // Create a compact shortcuts display
         const shortcutsDisplay = document.createElement('div');
         shortcutsDisplay.className = 'keyboard-shortcut-compact hidden';
         shortcutsDisplay.innerHTML = `
@@ -294,52 +243,44 @@ class CanvasSetupManager {
             </div>
         `;
         
-        // Create toggle button
         const toggleButton = document.createElement('div');
         toggleButton.className = 'keyboard-shortcut-toggle';
         toggleButton.innerHTML = '<i class="fas fa-keyboard"></i>';
         toggleButton.title = 'Toggle Keyboard Shortcuts';
         
-        // Add click event to toggle
         toggleButton.addEventListener('click', () => {
             shortcutsDisplay.classList.toggle('hidden');
         });
         
-        // Add to document
         document.body.appendChild(shortcutsDisplay);
         document.body.appendChild(toggleButton);
         
-        // Store references for later cleanup
         this._shortcutsDisplay = shortcutsDisplay;
         this._shortcutsToggle = toggleButton;
         
-        // Auto-hide after 3 seconds if not already hidden
+        // Auto-hide after 3s
         setTimeout(() => {
             shortcutsDisplay.classList.add('hidden');
         }, 3000);
     }
     
-    /**
-     * Set up content monitors
-     */
     setupContentMonitors() {
         console.log("Setting up content monitors");
         this.setupChatMonitors();
         this.setupCanvasContentObserver();
     }
     
-    /**
-     * Monitor chat content buttons for canvas interaction
-     */
     setupChatMonitors() {
         const manager = this.canvasManager;
         
-        // Monitor chat content buttons
+        // Locate chat container
         const chatContainer = document.querySelector('.chat-messages');
         if (chatContainer) {
-            // Monitor for clicks on image display buttons and code buttons
+            // If you want to open the editor ONLY when a user explicitly clicks "Open in Editor",
+            // remove or comment out these auto-activation lines:
             chatContainer.addEventListener('click', e => {
-                // Image display buttons
+                // For example, "chat-image-send" auto-activation:
+                /*
                 if (e.target.closest('.chat-image-send') || 
                     e.target.closest('[data-action="showInCanvas"]')) {
                     
@@ -348,8 +289,10 @@ class CanvasSetupManager {
                         manager.activateModule('image');
                     }, 100);
                 }
+                */
                 
-                // Code display buttons
+                // Code display auto-activation:
+                /*
                 if (e.target.closest('.chat-code-send') || 
                     e.target.closest('[data-action="sendToEditor"]')) {
                     
@@ -358,14 +301,17 @@ class CanvasSetupManager {
                         manager.activateModule('code');
                     }, 100);
                 }
+                */
                 
-                // Chart buttons
+                // Chart auto-activation:
+                /*
                 if (e.target.closest('[data-action="createChart"]')) {
                     setTimeout(() => {
                         manager.expandCanvasSection();
                         manager.activateModule('chart');
                     }, 100);
                 }
+                */
             });
         }
         
@@ -378,7 +324,8 @@ class CanvasSetupManager {
                 
                 const text = suggestion.textContent.toLowerCase().trim();
                 
-                // Check what type of command was clicked
+                // Similarly, comment out or remove these lines:
+                /*
                 if (text.includes('chart') || text.includes('pie') || text.includes('bar')) {
                     setTimeout(() => {
                         manager.expandCanvasSection();
@@ -405,33 +352,35 @@ class CanvasSetupManager {
                         manager.activateModule('terminal');
                     }, 100);
                 }
+                */
             });
         }
     }
     
-    /**
-     * Monitor for content being added to canvas
-     */
     setupCanvasContentObserver() {
         if (!this.canvasManager.canvasContainer) return;
         
-        // Create observer to watch for changes
         const observer = new MutationObserver(mutations => {
-            // Check if content has been added to canvas instances
-            const hasActiveContent = Array.from(document.querySelectorAll('.canvas-instance')).some(instance => {
-                // Check if instance has content besides instructions
-                return instance.children.length > 3 || // More than basic elements
-                      (instance.querySelector('img') && instance.querySelector('img').src) || // Image content
-                      instance.querySelector('.code-editor') || // Code editor content
-                      instance.querySelector('.chart-container'); // Chart content
+            // Check if content was added
+            const hasActiveContent = Array.from(
+                document.querySelectorAll('.canvas-instance')
+            ).some(instance => {
+                return (
+                    instance.children.length > 3 ||
+                    (instance.querySelector('img') && instance.querySelector('img').src) ||
+                    instance.querySelector('.code-editor') ||
+                    instance.querySelector('.chart-container')
+                );
             });
             
-            if (hasActiveContent) {
-                this.canvasManager.expandCanvasSection();
-            }
+            // By default, the code auto-expands if new content is detected:
+            // if (hasActiveContent) {
+            //     this.canvasManager.expandCanvasSection();
+            // }
+            
+            // If you only want to expand the canvas manually, comment out or remove the above line
         });
         
-        // Start observing changes
         observer.observe(this.canvasManager.canvasContainer, { 
             childList: true, 
             subtree: true,
@@ -440,11 +389,7 @@ class CanvasSetupManager {
         });
     }
     
-    /**
-     * Clean up resources
-     */
     cleanup() {
-        // Remove shortcut display elements
         if (this._shortcutsDisplay && document.body.contains(this._shortcutsDisplay)) {
             document.body.removeChild(this._shortcutsDisplay);
         }

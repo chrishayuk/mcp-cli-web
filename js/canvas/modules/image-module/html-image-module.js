@@ -12,8 +12,32 @@ class HtmlImageModule extends HtmlModule {
         this.imageInfo = {};
         this.supportedCommands = ['display', 'random', 'zoom', 'info', 'theme'];
         
-        // Set default title for this module
+        // Set default title for this module using the new tab manager API
         this.setModuleTitle('Image Viewer');
+    }
+    
+    /**
+     * Get the module title.
+     * @returns {string} Title to display when module is active.
+     */
+    getModuleTitle() {
+        return 'Image Viewer';
+    }
+    
+    /**
+     * Set the module title.
+     * @param {string} title - Title to display when module is active.
+     * @returns {this} For method chaining.
+     */
+    setModuleTitle(title) {
+        this._moduleTitle = title;
+        
+        // If active and a tab manager exists, update only the active tab’s title.
+        if (this.isActive && this.manager && this.manager.tabManager) {
+            this.manager.tabManager.updateTabTitle(this.manager.activeCanvasId, title);
+        }
+        
+        return this;
     }
     
     /**
@@ -48,28 +72,37 @@ class HtmlImageModule extends HtmlModule {
     
     /**
      * Activate the module.
-     * Shows image container and hides canvas.
+     * Expands the canvas section, hides the base canvas, and shows this module's container.
      */
     activate() {
         super.activate();
         
-        // Update canvas status
+        // Expand the collapsible canvas section so this module is fully visible
+        if (this.manager && typeof this.manager.expandCanvasSection === 'function') {
+            this.manager.expandCanvasSection();
+        }
+        
+        // Update canvas status and hide instructions
         if (this.manager) {
             this.manager.updateCanvasStatus('success', 'Image Module Active');
             this.manager.hideInstructions();
             
-            // Update title
-            if (typeof this.manager.updateCanvasTitle === 'function') {
+            // Use the new tab manager to update only the active tab's title
+            if (this.manager.tabManager) {
+                this.manager.tabManager.updateTabTitle(this.manager.activeCanvasId, this.getModuleTitle());
+            } else if (typeof this.manager.updateCanvasTitle === 'function') {
+                // Fallback if tabManager isn't available
                 this.manager.updateCanvasTitle(this.getModuleTitle());
             }
         }
         
-        // Hide canvas, show image container
+        // Hide the base <canvas> element (if any)
         const canvas = document.getElementById('canvas');
         if (canvas) {
             canvas.style.display = 'none';
         }
         
+        // Show this module's container
         if (this.container) {
             this.container.style.display = 'flex';
         }
@@ -80,7 +113,6 @@ class HtmlImageModule extends HtmlModule {
         }
         
         console.log("HTML Image Module activated");
-        
         return this;
     }
     
@@ -91,6 +123,7 @@ class HtmlImageModule extends HtmlModule {
     deactivate() {
         super.deactivate();
         
+        // Hide this module's container
         if (this.container) {
             this.container.style.display = 'none';
         }
@@ -99,7 +132,7 @@ class HtmlImageModule extends HtmlModule {
     }
     
     /**
-     * Create the base image viewer UI
+     * Create the base image viewer UI.
      */
     createImageViewerUI() {
         // Clear container
@@ -261,7 +294,6 @@ class HtmlImageModule extends HtmlModule {
     
     /**
      * Display an image by URL.
-     * @param {string} url - The image URL to display
      */
     displayImage(url) {
         if (!url) {
@@ -269,15 +301,12 @@ class HtmlImageModule extends HtmlModule {
             return false;
         }
         
-        // Update UI to show loading state
         this.setLoadingState(true);
         this.updateImageTitle("Loading image...");
         this.updateUrlDisplay(url);
         
-        // Create a new image element
         const img = new Image();
         img.onload = () => {
-            // Store image and info
             this.currentImage = img;
             this.imageInfo = {
                 url: url,
@@ -287,15 +316,12 @@ class HtmlImageModule extends HtmlModule {
                 loaded: true
             };
             
-            // Update the UI with the image
             this.renderImage();
             this.setLoadingState(false);
             this.updateImageMetadata();
             
-            // Extract image title/name from URL
             const imageName = this.extractImageName(url);
             this.updateImageTitle(imageName);
-            
             console.log(`Image loaded: ${url}, ${img.naturalWidth}x${img.naturalHeight}`);
         };
         
@@ -306,9 +332,7 @@ class HtmlImageModule extends HtmlModule {
             console.error(`Failed to load image: ${url}`);
         };
         
-        // Set the source to start loading
         img.src = url;
-        
         return true;
     }
     
@@ -316,15 +340,11 @@ class HtmlImageModule extends HtmlModule {
      * Display a random image.
      */
     displayRandomImage() {
-        // Sample categories to choose from
         const categories = ['nature', 'technology', 'animals', 'architecture'];
         const category = categories[Math.floor(Math.random() * categories.length)];
         
-        // Generate a random width and height
         const width = 600;
         const height = 400;
-        
-        // Use a placeholder service
         const url = `https://source.unsplash.com/random/${width}x${height}/?${category}`;
         
         this.updateImageTitle(`Random ${category} image`);
@@ -333,7 +353,6 @@ class HtmlImageModule extends HtmlModule {
     
     /**
      * Zoom image in, out, or reset.
-     * @param {string} action - '+', '-', or 'reset'
      */
     zoomImage(action) {
         if (!this.currentImage) {
@@ -352,7 +371,6 @@ class HtmlImageModule extends HtmlModule {
                 this.zoomLevel = 1;
                 break;
             default:
-                // Try to parse as a numeric zoom level
                 const level = parseFloat(action);
                 if (!isNaN(level) && level > 0) {
                     this.zoomLevel = Math.min(Math.max(level, 0.2), 3);
@@ -360,10 +378,7 @@ class HtmlImageModule extends HtmlModule {
         }
         
         this.renderImage();
-        
-        // Update metadata to include zoom
         this.updateImageMetadata();
-        
         return true;
     }
     
@@ -376,7 +391,6 @@ class HtmlImageModule extends HtmlModule {
             return false;
         }
         
-        // Create or update an info panel
         const viewingArea = this.container.querySelector('.image-viewing-area');
         let infoPanel = viewingArea.querySelector('.image-info-panel');
         
@@ -386,7 +400,6 @@ class HtmlImageModule extends HtmlModule {
             viewingArea.appendChild(infoPanel);
         }
         
-        // Set info panel content
         infoPanel.innerHTML = `
             <div class="info-header">
                 <h3>Image Information</h3>
@@ -400,7 +413,6 @@ class HtmlImageModule extends HtmlModule {
             </div>
         `;
         
-        // Add close button event
         const closeButton = infoPanel.querySelector('.close-button');
         closeButton.addEventListener('click', () => {
             infoPanel.remove();
@@ -411,7 +423,6 @@ class HtmlImageModule extends HtmlModule {
     
     /**
      * Set the theme for the image viewer.
-     * @param {string} theme - 'dark', 'light', or 'toggle'
      */
     setTheme(theme) {
         const isDark = this.container.classList.contains('dark-theme');
@@ -439,15 +450,10 @@ class HtmlImageModule extends HtmlModule {
             return false;
         }
         
-        // Create a download link
         const link = document.createElement('a');
         link.href = this.currentImage.src;
-        
-        // Extract filename from URL or use default
         const filename = this.extractImageName(this.imageInfo.url) || 'image.jpg';
         link.download = filename;
-        
-        // Trigger the download
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -479,20 +485,16 @@ class HtmlImageModule extends HtmlModule {
         
         if (!imageContainer) return false;
         
-        // Clear container and hide placeholder
         imageContainer.innerHTML = '';
         if (placeholderContainer) {
             placeholderContainer.style.display = 'none';
         }
         
-        // Create the image element
         const img = document.createElement('img');
         img.src = this.currentImage.src;
         img.className = 'displayed-image';
         img.style.transform = `scale(${this.zoomLevel})`;
         img.style.transformOrigin = 'center center';
-        
-        // Display the image
         imageContainer.appendChild(img);
         
         return true;
@@ -500,7 +502,6 @@ class HtmlImageModule extends HtmlModule {
     
     /**
      * Set the loading state of the UI.
-     * @param {boolean} isLoading - Whether the image is loading
      */
     setLoadingState(isLoading) {
         const viewingArea = this.container.querySelector('.image-viewing-area');
@@ -519,7 +520,6 @@ class HtmlImageModule extends HtmlModule {
     
     /**
      * Show error state in the UI.
-     * @param {string} message - Error message to display
      */
     showErrorState(message) {
         const placeholderContainer = this.container.querySelector('.image-placeholder');
@@ -532,11 +532,9 @@ class HtmlImageModule extends HtmlModule {
     
     /**
      * Update the image title in the UI.
-     * @param {string} title - The title to display
      */
     updateImageTitle(title) {
         const imageTitle = this.container.querySelector('.image-title');
-        
         if (imageTitle) {
             imageTitle.textContent = title;
         }
@@ -544,16 +542,13 @@ class HtmlImageModule extends HtmlModule {
     
     /**
      * Update the URL display in the UI.
-     * @param {string} url - The URL to display
      */
     updateUrlDisplay(url) {
         const urlDisplay = this.container.querySelector('.image-url');
-        
         if (urlDisplay) {
-            // Truncate URL if too long
             const displayUrl = url.length > 60 ? url.substring(0, 57) + '...' : url;
             urlDisplay.textContent = displayUrl;
-            urlDisplay.title = url; // Show full URL on hover
+            urlDisplay.title = url;
         }
     }
     
@@ -564,7 +559,6 @@ class HtmlImageModule extends HtmlModule {
         if (!this.currentImage || !this.imageInfo.loaded) return;
         
         const dimensionsElement = this.container.querySelector('.dimensions');
-        
         if (dimensionsElement) {
             const zoom = (this.zoomLevel * 100).toFixed(0);
             dimensionsElement.textContent = `${this.imageInfo.width} × ${this.imageInfo.height} (${zoom}%)`;
@@ -573,17 +567,12 @@ class HtmlImageModule extends HtmlModule {
     
     /**
      * Extract a reasonable image name from a URL.
-     * @param {string} url - The image URL
-     * @returns {string} The extracted image name
      */
     extractImageName(url) {
         try {
-            // Try to get the filename from the URL
             const urlObj = new URL(url);
             const pathname = urlObj.pathname;
             const filename = pathname.split('/').pop();
-            
-            // Clean up the filename
             return filename.split('?')[0] || 'Image';
         } catch (e) {
             return 'Image';
