@@ -893,5 +893,5 @@ class StreamingTerminalModule extends CanvasModule {
 // Make StreamingTerminalModule globally available
 if (typeof window !== 'undefined') {
   window.StreamingTerminalModule = StreamingTerminalModule;
-  console.log('StreamingTerminalModule registered globally');x
+  console.log('StreamingTerminalModule registered globally');
 }
