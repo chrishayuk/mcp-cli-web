@@ -1,4 +1,5 @@
 /**
+ * js/canvas/modules/code-module/code-module-slash-command-handler.js
  * Code Module Slash Command Handler
  * 
  * Registers slash commands specific to the code module
@@ -290,9 +291,4 @@ function getCodeSnippets() {
             python: 'import requests\n\ndef fetch_data(url):\n    """Fetch data from an API\n    \n    Args:\n        url (str): API endpoint\n        \n    Returns:\n        dict: API response data\n        \n    Raises:\n        Exception: If the request fails\n    """\n    try:\n        response = requests.get(url)\n        response.raise_for_status()  # Raise exception for 4XX/5XX status\n        \n        return response.json()\n    except Exception as e:\n        print(f"Fetch error: {e}")\n        raise\n\n# Example usage\ntry:\n    data = fetch_data("https://jsonplaceholder.typicode.com/todos/1")\n    print("API response:", data)\nexcept Exception as e:\n    print("Error:", e)'
         }
     };
-}
-
-// Export code module update function for the slash commands system
-if (typeof window !== 'undefined') {
-    window.updateCodeModule = updateCodeModule;
 }

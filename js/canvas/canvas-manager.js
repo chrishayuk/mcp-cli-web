@@ -1,4 +1,5 @@
 /**
+ * js/canvas-manager.js
  * Canvas Manager - Manages multiple visualization modules
  * Serves as the central controller for all canvas operations
  * Enhanced with title management support

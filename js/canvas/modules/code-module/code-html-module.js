@@ -1,4 +1,5 @@
 /**
+ * js/canvas/modules/code-module/code-html-module.js
  * Enhanced CodeModule (Terminal Style)
  * A component for displaying, editing, and executing code with a terminal aesthetic.
  * Features:

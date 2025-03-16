@@ -1,4 +1,5 @@
 /**
+ * main.js
  * Main entry point for the Terminal Canvas
  * 
  * Initializes the canvas manager, registers modules,

@@ -1,4 +1,5 @@
 /**
+ * js/canvas/modules/code-module/code-module-commands.js
  * Code Module Command Handler
  * 
  * Handles chat commands for the code module in the terminal chat interface.

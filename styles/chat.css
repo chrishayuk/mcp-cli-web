@@ -1,4 +1,8 @@
-/* Chat-specific styles */
+/**
+ * main.css styling
+ * 
+ * Chat Specific styles for chat ui
+ */
 .terminal-chat {
     display: flex;
     flex-direction: column;

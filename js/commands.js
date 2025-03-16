@@ -1,4 +1,5 @@
 /**
+ * js/canvas/commands.js
  * Command processor for the Terminal Canvas
  */
 class CommandProcessor {

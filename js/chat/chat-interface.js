@@ -1,4 +1,5 @@
 /**
+ * js/chat/chat-interface.js
  * Chat Interface for Terminal Canvas
  * 
  * Provides a chat-like interface that integrates with the existing

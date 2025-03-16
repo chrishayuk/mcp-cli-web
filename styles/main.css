@@ -1,3 +1,8 @@
+/**
+ * main.css styling
+ * 
+ * CSS styles for the slash command system in Terminal Canvas
+ */
 :root {
     --bg-terminal: #0C0C0C;
     --text-green: #0FFF0F;

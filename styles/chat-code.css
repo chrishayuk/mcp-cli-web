@@ -1,0 +1,137 @@
+/**
+ * styles/chat-code.css
+ * CSS Styles for Enhanced Chat Code Blocks
+ * Add these to your existing CSS files or include as a new stylesheet
+ */
+
+/* Code Block Container */
+.code-block-container {
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 8px 0;
+    border: 1px solid var(--border-color);
+    font-family: var(--font-mono);
+}
+
+/* Code Block Header */
+.code-block-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 8px;
+    background-color: rgba(0, 0, 0, 0.6);
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.8rem;
+    color: var(--text-header);
+}
+
+/* Code Block Content */
+.code-block-container pre {
+    margin: 0;
+    padding: 10px;
+    background-color: rgba(0, 0, 0, 0.4);
+    overflow-x: auto;
+    font-size: 0.85rem;
+}
+
+.code-block-container code {
+    font-family: var(--font-mono);
+    white-space: pre;
+    tab-size: 2;
+}
+
+/* Code Block Actions */
+.code-block-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.code-block-actions .terminal-button {
+    font-size: 0.75rem;
+    padding: 2px 6px;
+    background-color: rgba(0, 0, 0, 0.5);
+    color: var(--text-green);
+    border: 1px solid var(--border-color);
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.code-block-actions .terminal-button:hover {
+    background-color: rgba(0, 50, 0, 0.7);
+    color: var(--text-header);
+}
+
+/* Syntax Highlighting */
+.code-block-container .hljs-keyword,
+.code-block-container .hljs-selector-tag {
+    color: #ff79c6;
+}
+
+.code-block-container .hljs-title,
+.code-block-container .hljs-section,
+.code-block-container .hljs-name {
+    color: #50fa7b;
+}
+
+.code-block-container .hljs-string,
+.code-block-container .hljs-selector-id,
+.code-block-container .hljs-selector-class {
+    color: #f1fa8c;
+}
+
+.code-block-container .hljs-comment,
+.code-block-container .hljs-quote {
+    color: #6272a4;
+}
+
+.code-block-container .hljs-variable,
+.code-block-container .hljs-template-variable,
+.code-block-container .hljs-attribute {
+    color: #ff79c6;
+}
+
+.code-block-container .hljs-number,
+.code-block-container .hljs-literal {
+    color: #bd93f9;
+}
+
+.code-block-container .hljs-type,
+.code-block-container .hljs-built_in {
+    color: #8be9fd;
+}
+
+/* Format code suggestion highlight */
+.command-suggestion:has(i.fa-code) {
+    background-color: rgba(0, 50, 0, 0.5);
+}
+
+.command-suggestion:has(i.fa-code):hover {
+    background-color: rgba(0, 100, 0, 0.7);
+}
+
+/* Transition effects */
+.code-block-container {
+    transition: box-shadow 0.3s ease;
+}
+
+.code-block-container:hover {
+    box-shadow: 0 0 8px rgba(0, 255, 0, 0.3);
+}
+
+/* Make message text allow for complex content */
+.message-text {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Animation for the "Copied" feedback */
+@keyframes copied-feedback {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
+.code-block-actions .copied {
+    animation: copied-feedback 0.3s ease;
+}

@@ -636,7 +636,7 @@ function showModuleActivationMessage(moduleName) {
     }
     
     // Show message
-    window.ChatInterface.addSystemMessage(message);
+    // window.ChatInterface.addSystemMessage(message);
 }
 
 /**
