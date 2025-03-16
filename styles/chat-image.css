@@ -1,0 +1,124 @@
+/**
+ * styles/chat-image.css
+ * CSS Styles for Enhanced Chat Image Blocks
+ */
+
+/* Image Block Container */
+.image-block-container {
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 8px 0;
+    border: 1px solid var(--border-color);
+    font-family: var(--font-mono);
+    background-color: rgba(0, 0, 0, 0.6);
+    transition: box-shadow 0.3s ease;
+}
+
+.image-block-container:hover {
+    box-shadow: 0 0 8px rgba(0, 255, 0, 0.3);
+}
+
+/* Image Block Header */
+.image-block-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 8px;
+    background-color: rgba(0, 0, 0, 0.6);
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.8rem;
+    color: var(--text-header);
+}
+
+/* Image Content */
+.image-block-content {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 10px;
+    background-color: rgba(0, 0, 0, 0.2);
+}
+
+.image-block-content img {
+    max-width: 300px;
+    max-height: 200px;
+    object-fit: contain;
+    border-radius: 3px;
+}
+
+/* Image Block Actions */
+.image-block-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.image-block-actions .terminal-button {
+    font-size: 0.75rem;
+    padding: 2px 6px;
+    background-color: rgba(0, 0, 0, 0.5);
+    color: var(--text-green);
+    border: 1px solid var(--border-color);
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.image-block-actions .terminal-button:hover {
+    background-color: rgba(0, 50, 0, 0.7);
+    color: var(--text-header);
+}
+
+/* Image URL Caption */
+.image-block-caption {
+    padding: 4px 8px;
+    font-size: 0.7rem;
+    border-top: 1px solid var(--border-color);
+    color: var(--text-dim);
+    word-break: break-all;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.image-block-caption a {
+    color: var(--text-dim);
+    text-decoration: none;
+}
+
+.image-block-caption a:hover {
+    text-decoration: underline;
+    color: var(--text-green);
+}
+
+/* Loading and Error States */
+.image-block-loading,
+.image-block-error {
+    padding: 20px;
+    text-align: center;
+    color: var(--text-dim);
+    font-style: italic;
+}
+
+.image-block-error {
+    color: var(--text-error);
+}
+
+/* Animation for the image loading */
+@keyframes pulse-loading {
+    0% { opacity: 0.3; }
+    50% { opacity: 0.7; }
+    100% { opacity: 0.3; }
+}
+
+.image-block-loading {
+    animation: pulse-loading 1.5s infinite;
+}
+
+/* Format image suggestion highlight */
+.command-suggestion:has(i.fa-image) {
+    background-color: rgba(0, 50, 0, 0.5);
+}
+
+.command-suggestion:has(i.fa-image):hover {
+    background-color: rgba(0, 100, 0, 0.7);
+}
