@@ -33,12 +33,28 @@ document.addEventListener('DOMContentLoaded', () => {
         // Register modules with error handling
         try {
             console.log("Registering standard modules...");
+            
+            // Create modules with titles
+            const imageModule = new ImageModule();
+            const chartModule = new ChartModule();
+            const codeModule = new CodeModule();
+            const shapeModule = new ShapeModule();
+            const markdownModule = new MarkdownModule();
+            
+            // Set default titles for modules
+            imageModule.setModuleTitle('Image Viewer');
+            chartModule.setModuleTitle('Chart Visualization');
+            codeModule.setModuleTitle('Code Display'); // This is redundant if CodeModule already sets its title in constructor
+            shapeModule.setModuleTitle('Shape Editor');
+            markdownModule.setModuleTitle('Markdown Viewer');
+            
+            // Register modules with canvas manager
             canvasManager
-                .registerModule('image', new ImageModule())
-                .registerModule('chart', new ChartModule())
-                .registerModule('code', new CodeModule())
-                .registerModule('shape', new ShapeModule())
-                .registerModule('markdown', new MarkdownModule());
+                .registerModule('image', imageModule)
+                .registerModule('chart', chartModule)
+                .registerModule('code', codeModule)
+                .registerModule('shape', shapeModule)
+                .registerModule('markdown', markdownModule);
             
             console.log("Standard modules registered successfully");
             
@@ -49,6 +65,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     throw new Error("StreamingTerminalModule class is not defined");
                 }
                 const terminalModule = new StreamingTerminalModule();
+                
+                // Set terminal module title
+                if (typeof terminalModule.setModuleTitle === 'function') {
+                    terminalModule.setModuleTitle('Terminal Connection');
+                }
+                
                 console.log("Terminal module instance created:", terminalModule);
                 canvasManager.registerModule('terminal', terminalModule);
                 console.log("Terminal module registered successfully");

@@ -1,8 +1,13 @@
 /**
- * Base Canvas Module Interface
+ * Base Canvas Module Interface with Title Support
  * All canvas visualization modules should extend this class
  */
 class CanvasModule {
+    constructor() {
+        this.moduleTitle = null; // Title to display when module is active
+        this.isActive = false;
+    }
+    
     /**
      * Initialize the module
      * @param {HTMLCanvasElement} canvas - Canvas element
@@ -13,7 +18,31 @@ class CanvasModule {
         this.canvas = canvas;
         this.ctx = ctx;
         this.manager = manager;
-        this.isActive = false;
+        return this;
+    }
+    
+    /**
+     * Get the module's display title
+     * @returns {string|null} The title to display, or null for default title
+     */
+    getModuleTitle() {
+        return this.moduleTitle;
+    }
+    
+    /**
+     * Set the module's display title
+     * @param {string} title - The title to display when module is active
+     * @returns {this} For method chaining
+     */
+    setModuleTitle(title) {
+        this.moduleTitle = title;
+        
+        // Update title immediately if we're active
+        if (this.isActive && this.manager && typeof this.manager.updateCanvasTitle === 'function') {
+            this.manager.updateCanvasTitle(title);
+        }
+        
+        return this;
     }
     
     /**
@@ -22,6 +51,12 @@ class CanvasModule {
     activate() {
         this.isActive = true;
         this.manager.hideInstructions();
+        
+        // Update title if we have one
+        if (this.manager && typeof this.manager.updateCanvasTitle === 'function') {
+            this.manager.updateCanvasTitle(this.getModuleTitle());
+        }
+        
         return this;
     }
     

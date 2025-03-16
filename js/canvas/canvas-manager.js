@@ -1,6 +1,7 @@
 /**
  * Canvas Manager - Manages multiple visualization modules
  * Serves as the central controller for all canvas operations
+ * Enhanced with title management support
  */
 class CanvasManager {
     constructor() {
@@ -10,8 +11,33 @@ class CanvasManager {
         this.currentModule = null;
         this.zoomLevel = 1;
         
+        // Title management
+        const canvasTitle = document.getElementById('canvasTitle');
+        this._defaultTitle = canvasTitle ? canvasTitle.textContent : 'Canvas Display';
+        
         this.setupEventListeners();
         this.updateCanvasStatus('success', 'Ready');
+    }
+    
+    /**
+     * Update the canvas title
+     * @param {string} title - New title or null to reset to default
+     * @returns {this} For method chaining
+     */
+    updateCanvasTitle(title) {
+        const canvasTitle = document.getElementById('canvasTitle');
+        if (canvasTitle) {
+            canvasTitle.textContent = title || this._defaultTitle;
+        }
+        return this;
+    }
+    
+    /**
+     * Reset the canvas title to default
+     * @returns {this} For method chaining
+     */
+    resetCanvasTitle() {
+        return this.updateCanvasTitle(this._defaultTitle);
     }
     
     /**
@@ -44,6 +70,12 @@ class CanvasManager {
         // Activate new module
         this.currentModule = this.modules.get(name);
         this.currentModule.activate();
+        
+        // Update title if module didn't set one
+        if (!this.currentModule.getModuleTitle()) {
+            this.resetCanvasTitle();
+        }
+        
         console.log(`Activated module: ${name}`);
         return true;
     }

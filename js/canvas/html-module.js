@@ -23,9 +23,12 @@ class HtmlModule extends CanvasModule {
      * @param {CanvasManager} manager - Reference to the manager.
      */
     init(container, ctx, manager) {
+        // Call parent init for manager reference
+        super.init(container, ctx, manager);
+        
         // Instead of a canvas, we assume container is an HTML element
         this.container = container;
-        this.manager = manager;
+        
         // Optionally hide any instructions or initial messages
         if (this.container) {
             this.container.innerHTML = '';

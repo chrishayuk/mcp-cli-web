@@ -1,65 +1,328 @@
-/* IDE container */
+/* Enhanced Terminal-Style Code Editor
+   Designed to match the terminal aesthetic 
+   with collapsible panels and improved visual elements */
+
+/* Code container base */
 .ide-code-container {
     position: relative;
     width: 100%;
     height: 100%;
-    background-color: #1e1e1e;
-    color: #0FFF0F;
-    font-family: monospace;
+    background-color: var(--bg-terminal);
+    color: var(--text-green);
+    font-family: var(--font-mono);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
-/* Header styling */
+/* Header styling to match terminal titlebar */
 .ide-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background-color: #333;
-    padding: 5px 10px;
-    border-bottom: 1px solid #555;
+    background-color: var(--bg-panel);
+    padding: 0.3rem 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+    height: 30px;
 }
 
 .ide-lang-label {
+    color: var(--text-header);
     font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+}
+
+.ide-lang-label::before {
+    content: "●";
+    color: var(--text-green);
+    font-size: 10px;
 }
 
 .ide-spacer {
     flex-grow: 1;
 }
 
-.ide-copy-button,
-.ide-run-button {
-    background: none;
+/* Button styling to match terminal buttons */
+.ide-button {
+    background-color: transparent;
     border: none;
-    color: #0FFF0F;
+    color: var(--text-dim);
     cursor: pointer;
     margin-left: 10px;
-    font-size: 1em;
+    font-size: 0.9em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 3px;
+    transition: all 0.2s;
 }
 
-.ide-copy-button:hover,
-.ide-run-button:hover {
-    color: #fff;
+.ide-button:hover {
+    background-color: rgba(0, 255, 0, 0.1);
+    color: var(--text-green);
 }
 
-/* Code wrapper styling */
+/* Section headers for collapsible panels */
+.ide-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: rgba(0, 0, 0, 0.3);
+    padding: 4px 10px;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    cursor: pointer;
+    user-select: none;
+    height: 24px;
+}
+
+.ide-section-header:hover {
+    background-color: rgba(0, 0, 0, 0.4);
+    color: var(--text-green);
+}
+
+.ide-section-header .toggle-icon {
+    transition: transform 0.2s;
+}
+
+.ide-section-header.collapsed .toggle-icon {
+    transform: rotate(-90deg);
+}
+
+/* Code editor wrapper with collapsible functionality */
 .ide-code-wrapper {
-    padding: 10px;
-    overflow-x: auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: flex 0.3s ease;
 }
 
-.ide-code-wrapper pre {
+.ide-code-wrapper.collapsed {
+    flex: 0;
+    height: 0;
+    overflow: hidden;
+}
+
+/* Code editor styling */
+.ide-code-editor {
+    flex: 1;
+    overflow: auto;
+    padding: 10px;
+    position: relative;
+    background-color: rgba(0, 0, 0, 0.2);
+}
+
+.ide-code-editor pre {
     margin: 0;
-    padding: 10px;
-    white-space: pre-wrap;
+    font-family: var(--font-mono);
+    white-space: pre;
+    tab-size: 4;
+    min-height: 100%;
 }
 
-/* Theme overrides */
+.ide-code-editor pre code {
+    display: block;
+    padding: 0;
+    overflow-x: auto;
+    font-size: 14px;
+    line-height: 1.5;
+    background: transparent;
+}
+
+/* Line numbers panel */
+.ide-code-editor.with-line-numbers {
+    padding-left: 3rem;
+}
+
+.ide-line-numbers {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 2.5rem;
+    background-color: rgba(0, 0, 0, 0.3);
+    padding: 10px 0;
+    color: var(--text-dim);
+    text-align: right;
+    font-size: 12px;
+    user-select: none;
+    border-right: 1px solid var(--border-color);
+}
+
+.ide-line-number {
+    padding: 0 5px;
+    line-height: 1.5;
+}
+
+/* Results container with collapsible functionality */
+.ide-result-container {
+    display: flex;
+    flex-direction: column;
+    border-top: 1px solid var(--border-color);
+    overflow: hidden;
+    transition: height 0.3s ease;
+    flex: 0 0 auto;
+    max-height: 40%;
+    height: 150px;
+}
+
+.ide-result-container.collapsed {
+    height: 0;
+}
+
+.ide-result-area {
+    padding: 10px;
+    background-color: rgba(0, 0, 0, 0.2);
+    color: var(--text-green);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    overflow: auto;
+    flex: 1;
+}
+
+.ide-result-area pre {
+    margin: 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+/* Terminal scanline effect */
+.ide-scanlines {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        to bottom,
+        rgba(18, 16, 16, 0) 50%,
+        rgba(0, 0, 0, 0.25) 50%
+    );
+    background-size: 100% 4px;
+    pointer-events: none;
+    opacity: 0.05;
+    z-index: 1;
+}
+
+/* Status bar for editor */
+.ide-status-bar {
+    height: 25px;
+    background-color: var(--bg-panel);
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    padding: 0 0.5rem;
+    color: var(--text-dim);
+    font-size: 0.75rem;
+}
+
+.ide-status-item {
+    margin-right: 15px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+/* Execution status indicators */
+.execution-running {
+    color: var(--text-warning);
+}
+
+.execution-success {
+    color: var(--text-green);
+}
+
+.execution-error {
+    color: var(--text-error);
+}
+
+/* Theme variants */
 .ide-theme-dark {
-    background-color: #1e1e1e !important;
-    color: #0FFF0F !important;
+    background-color: var(--bg-terminal);
+    color: var(--text-green);
 }
 
 .ide-theme-light {
-    background-color: #f5f5f5 !important;
-    color: #333 !important;
+    background-color: #f5f5f5;
+    color: #333;
+}
+
+.ide-theme-light .ide-header {
+    background-color: #e0e0e0;
+    border-color: #ccc;
+}
+
+.ide-theme-light .ide-section-header {
+    background-color: #f0f0f0;
+    color: #555;
+}
+
+.ide-theme-light .ide-code-editor {
+    background-color: #fff;
+}
+
+.ide-theme-light .ide-line-numbers {
+    background-color: #f0f0f0;
+    color: #888;
+}
+
+.ide-theme-light .ide-result-area {
+    background-color: #f8f8f8;
+    color: #333;
+}
+
+.ide-theme-light .ide-status-bar {
+    background-color: #e0e0e0;
+    color: #555;
+}
+
+/* Highlight.js syntax highlighting adjustments */
+.hljs-keyword, .hljs-selector-tag {
+    color: #ff79c6;
+}
+
+.hljs-title, .hljs-section, .hljs-name {
+    color: #50fa7b;
+}
+
+.hljs-string, .hljs-selector-id, .hljs-selector-class {
+    color: #f1fa8c;
+}
+
+.hljs-comment, .hljs-quote {
+    color: #6272a4;
+}
+
+.hljs-variable, .hljs-template-variable, .hljs-attribute {
+    color: #ff79c6;
+}
+
+.hljs-number, .hljs-literal {
+    color: #bd93f9;
+}
+
+.hljs-type, .hljs-built_in {
+    color: #8be9fd;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .ide-line-numbers {
+        display: none;
+    }
+    
+    .ide-code-editor.with-line-numbers {
+        padding-left: 10px;
+    }
+    
+    .ide-result-container {
+        max-height: 100px;
+    }
 }
