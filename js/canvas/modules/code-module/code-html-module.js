@@ -1,15 +1,6 @@
 /**
  * js/canvas/modules/code-module/code-html-module.js
- * Enhanced CodeModule (Terminal Style)
- * A component for displaying, editing, and executing code with a terminal aesthetic.
- * Features:
- *   - Collapsible editor and results panels
- *   - Terminal-styled interface consistent with the rest of the application
- *   - Syntax highlighting
- *   - Line numbers
- *   - Code execution simulation
- *   - Status indicators
- *   - Title management
+ * Enhanced CodeModule (Terminal Style) with improved tab support
  */
 class CodeModule extends HtmlModule {
     constructor() {
@@ -23,8 +14,10 @@ class CodeModule extends HtmlModule {
         this.htmlContainer = null;
         this.container = null;
         
-        // Set default title for this module
+        // Set default title for this module using the new tab manager API
         this.setModuleTitle('Code Display');
+        // Explicitly set module name for multi-tab handling
+        this.moduleName = 'code';
         
         // Define supported commands
         this.supportedCommands = [
@@ -34,111 +27,190 @@ class CodeModule extends HtmlModule {
     }
     
     /**
-     * Get the module title
-     * @returns {string} Title to display when module is active
+     * Get the module title.
+     * @returns {string} Title to display when module is active.
      */
     getModuleTitle() {
         return 'Code Display';
     }
     
     /**
-     * Set the module title
-     * @param {string} title - Title to display when module is active
-     * @returns {this} For method chaining
+     * Set the module title.
+     * @param {string} title - Title to display when module is active.
+     * @returns {this} For method chaining.
      */
     setModuleTitle(title) {
         this._moduleTitle = title;
-        
-        // Update title immediately if we're active using the new tab manager
+        // If active and a tab manager exists, update only the active tab's title.
         if (this.isActive && this.manager && this.manager.tabManager) {
             this.manager.tabManager.updateTabTitle(this.manager.activeCanvasId, title);
         }
-        
         return this;
     }
     
     /**
      * Initialize the module.
-     * Creates or uses existing HTML container for code display.
+     * Creates or uses an existing HTML container for code display.
+     * Modified to better support the tab system.
      */
     init(element, ctx, manager) {
-        if (element.tagName.toLowerCase() === 'canvas') {
-            // Create a container for our HTML if we're given a canvas
-            const container = document.createElement('div');
-            container.id = 'codeContainer_' + Date.now();
-            container.className = 'ide-code-container';
-            container.style.display = 'none';
-            element.parentNode.insertBefore(container, element.nextSibling);
-            this.container = container;
-        } else {
-            // Use the provided container directly
-            this.container = element;
-            this.container.classList.add('ide-code-container');
+        // Store the manager reference first
+        this.manager = manager;
+        
+        // Get the parent element for this canvas
+        const parentElement = element.parentNode;
+        if (!parentElement) {
+            console.error("Code Module: No parent element found");
+            return this;
         }
         
-        this.manager = manager;
+        // Generate a unique container ID based on canvas ID
+        const canvasId = manager.activeCanvasId || 'main';
+        const containerId = `codeContainer_${canvasId}`;
+        
+        // Check if a container already exists for this tab
+        let container = parentElement.querySelector(`#${containerId}`);
+        
+        if (container) {
+            // Use existing container
+            console.log(`Code Module: Using existing container for ${canvasId}`);
+            this.container = container;
+        } else if (element.tagName.toLowerCase() === 'canvas') {
+            // Create a new container with an ID linked to the canvas ID
+            container = document.createElement('div');
+            container.id = containerId;
+            container.className = 'ide-code-container';
+            container.style.display = 'none';
+            container.dataset.canvasId = canvasId;
+            
+            parentElement.insertBefore(container, element.nextSibling);
+            this.container = container;
+            console.log(`Code Module: Created new container for ${canvasId}`);
+        } else {
+            // Use the provided element as container
+            this.container = element;
+            this.container.classList.add('ide-code-container');
+            this.container.dataset.canvasId = canvasId;
+            console.log(`Code Module: Using element as container for ${canvasId}`);
+        }
+        
+        // Clear the container and prepare it for content
         if (this.container) {
             this.container.innerHTML = '';
         }
         
-        // Log initialization
-        if (typeof terminal !== 'undefined') {
-            terminal.addOutput(`[INFO] Code Module initialized`);
-        }
-        
+        console.log(`Code Module initialized for canvas: ${canvasId}`);
         return this;
     }
     
     /**
      * Activate the module.
-     * Expands the canvas, hides the base canvas element, and shows the code container.
+     * Expands the canvas section, hides the base canvas, and shows the code container.
      */
     activate() {
         super.activate();
         
-        // Explicitly expand the canvas section before proceeding.
+        // Explicitly expand the canvas section so the module is fully visible.
         if (this.manager && typeof this.manager.expandCanvasSection === 'function') {
             this.manager.expandCanvasSection();
         }
         
-        // Update canvas status and hide instructions
+        // Update canvas status and hide instructions.
         if (this.manager) {
             this.manager.updateCanvasStatus('success', 'Code Module Active');
             this.manager.hideInstructions();
             
-            // Update active tab title using the new tab manager
+            // Update tab title
+            const canvasId = this.manager.activeCanvasId;
             if (this.manager.tabManager) {
-                this.manager.tabManager.updateTabTitle(this.manager.activeCanvasId, this.getModuleTitle());
+                this.manager.tabManager.updateTabTitle(canvasId, this.getModuleTitle());
             } else {
                 const canvasTitle = document.getElementById('canvasTitle');
                 if (canvasTitle) {
                     canvasTitle.textContent = this.getModuleTitle();
                 }
             }
+            
+            // Make sure container is associated with the current canvas ID
+            if (this.container && !this.container.dataset.canvasId) {
+                this.container.dataset.canvasId = canvasId;
+            }
         }
         
-        // Hide the base canvas element
-        const canvas = document.getElementById('canvas');
-        if (canvas) {
-            canvas.style.display = 'none';
+        // Hide the base canvas element (if any)
+        const baseCanvas = document.getElementById('canvas');
+        if (baseCanvas) {
+            baseCanvas.style.display = 'none';
         }
         
-        // Show the code container
+        // Show this module's container
         if (this.container) {
             this.container.style.display = 'flex';
         }
         
-        // If no code is present yet, add a placeholder and render
+        // If no code exists, set a default sample and render the UI
         if (!this.code) {
             this.code = '// Enter your code here\nconsole.log("Hello World");';
             this.render();
         }
         
-        if (typeof terminal !== 'undefined') {
-            terminal.addOutput(`[INFO] Code Module activated`);
+        console.log(`Code Module activated for canvas: ${this.manager.activeCanvasId}`);
+        return this;
+    }
+    
+    /**
+     * Deactivate the module.
+     * Hides the code container.
+     */
+    deactivate() {
+        super.deactivate();
+        if (this.container) {
+            this.container.style.display = 'none';
+        }
+        return this;
+    }
+    
+    /**
+     * Display code with an optional language override.
+     * Improved to work better with the tab system.
+     */
+    displayCode(code, language) {
+        if (this.manager) {
+            this.manager.hideInstructions();
         }
         
-        return this;
+        // Ensure we're using the right container for the current tab
+        if (this.manager && this.manager.activeCanvasId) {
+            const canvasId = this.manager.activeCanvasId;
+            const container = document.querySelector(`.ide-code-container[data-canvas-id="${canvasId}"]`);
+            
+            if (container && container !== this.container) {
+                console.log(`Code Module: Switching to container for canvas ${canvasId}`);
+                this.container = container;
+            }
+        }
+        
+        if (typeof code !== 'string') {
+            console.error('[ERROR] Invalid code format');
+            if (this.container) {
+                this.container.innerHTML = '<p style="color: var(--text-error); padding: 1rem;">Invalid Code Format</p>';
+            }
+            return false;
+        }
+        
+        this.code = code;
+        
+        if (language) {
+            this.language = language.toLowerCase();
+            if (this.isActive && this.manager && this.manager.tabManager) {
+                this.manager.tabManager.updateTabTitle(this.manager.activeCanvasId, this.getModuleTitle());
+            }
+        }
+        
+        this.render();
+        
+        console.log(`Code displayed (${this.code.split('\n').length} lines)`);
+        return true;
     }
     
     /**
@@ -151,106 +223,50 @@ class CodeModule extends HtmlModule {
                     return this.displayCode(args[0], args[1]);
                 }
                 return false;
-                
             case 'language':
                 if (args && args.length > 0) {
                     this.language = args[0].toLowerCase();
-                    if (typeof terminal !== 'undefined') {
-                        terminal.addOutput(`[INFO] Code language set to: ${this.language}`);
-                    }
-                    
+                    console.log(`Code language set to: ${this.language}`);
                     const renderResult = this.render();
-                    
                     if (this.isActive && this.manager && this.manager.tabManager) {
                         this.manager.tabManager.updateTabTitle(this.manager.activeCanvasId, this.getModuleTitle());
                     }
-                    
                     return renderResult;
                 }
                 return false;
-                
             case 'fontsize':
                 if (args && args.length > 0) {
                     const size = parseInt(args[0]);
                     if (!isNaN(size) && size > 0) {
                         this.fontSize = size;
-                        if (typeof terminal !== 'undefined') {
-                            terminal.addOutput(`[INFO] Font size set to: ${size}px`);
-                        }
+                        console.log(`Font size set to: ${size}px`);
                         return this.render();
                     }
                 }
                 return false;
-                
             case 'theme':
                 if (args && args.length > 0) {
                     return this.setTheme(args[0]);
                 }
                 return false;
-                
             case 'toggleLineNumbers':
                 this.showLineNumbers = !this.showLineNumbers;
-                if (typeof terminal !== 'undefined') {
-                    terminal.addOutput(`[INFO] Line numbers ${this.showLineNumbers ? 'enabled' : 'disabled'}`);
-                }
+                console.log(`Line numbers ${this.showLineNumbers ? 'enabled' : 'disabled'}`);
                 return this.render();
-                
             case 'toggleEditor':
                 this.editorCollapsed = !this.editorCollapsed;
-                if (typeof terminal !== 'undefined') {
-                    terminal.addOutput(`[INFO] Editor panel ${this.editorCollapsed ? 'collapsed' : 'expanded'}`);
-                }
+                console.log(`Editor panel ${this.editorCollapsed ? 'collapsed' : 'expanded'}`);
                 return this.updateCollapsibleState();
-                
             case 'toggleResults':
                 this.resultsCollapsed = !this.resultsCollapsed;
-                if (typeof terminal !== 'undefined') {
-                    terminal.addOutput(`[INFO] Results panel ${this.resultsCollapsed ? 'collapsed' : 'expanded'}`);
-                }
+                console.log(`Results panel ${this.resultsCollapsed ? 'collapsed' : 'expanded'}`);
                 return this.updateCollapsibleState();
-                
             case 'run':
                 return this.executeCode();
-                
             default:
                 console.error(`Unknown command for CodeModule: ${command}`);
                 return false;
         }
-    }
-    
-    /**
-     * Display code with optional language.
-     */
-    displayCode(code, language) {
-        if (this.manager) {
-            this.manager.hideInstructions();
-        }
-        
-        if (typeof code !== 'string') {
-            if (typeof terminal !== 'undefined') {
-                terminal.addOutput('[ERROR] Invalid code format');
-            }
-            this.container.innerHTML = '<p style="color: var(--text-error); padding: 1rem;">Invalid Code Format</p>';
-            return false;
-        }
-        
-        this.code = code;
-        
-        if (language) {
-            this.language = language.toLowerCase();
-            
-            if (this.isActive && this.manager && this.manager.tabManager) {
-                this.manager.tabManager.updateTabTitle(this.manager.activeCanvasId, this.getModuleTitle());
-            }
-        }
-        
-        this.render();
-        
-        if (typeof terminal !== 'undefined') {
-            terminal.addOutput(`[INFO] Code displayed (${this.code.split('\n').length} lines)`);
-        }
-        
-        return true;
     }
     
     /**
@@ -260,7 +276,6 @@ class CodeModule extends HtmlModule {
         if (!this.container) return false;
         
         this.container.classList.remove('ide-theme-dark', 'ide-theme-light');
-        
         switch (theme.toLowerCase()) {
             case 'dark':
                 this.container.classList.add('ide-theme-dark');
@@ -272,11 +287,7 @@ class CodeModule extends HtmlModule {
                 this.container.classList.add('ide-theme-dark');
                 break;
         }
-        
-        if (typeof terminal !== 'undefined') {
-            terminal.addOutput(`[INFO] Code theme set to: ${theme}`);
-        }
-        
+        console.log(`Code theme set to: ${theme}`);
         return true;
     }
     
@@ -308,7 +319,6 @@ class CodeModule extends HtmlModule {
                 resultsHeader.classList.remove('collapsed');
             }
         }
-        
         return true;
     }
     
@@ -318,11 +328,9 @@ class CodeModule extends HtmlModule {
     generateLineNumbers(code) {
         const lines = code.split('\n');
         let lineNumbersHtml = '';
-        
         for (let i = 1; i <= lines.length; i++) {
             lineNumbersHtml += `<div class="ide-line-number">${i}</div>`;
         }
-        
         return lineNumbersHtml;
     }
     
@@ -349,7 +357,7 @@ class CodeModule extends HtmlModule {
         langLabel.textContent = this.language;
         header.appendChild(langLabel);
         
-        // Spacer
+        // Spacer element
         const spacer = document.createElement('div');
         spacer.className = 'ide-spacer';
         header.appendChild(spacer);
@@ -359,9 +367,7 @@ class CodeModule extends HtmlModule {
         lineNumbersBtn.className = 'ide-button';
         lineNumbersBtn.title = 'Toggle Line Numbers';
         lineNumbersBtn.innerHTML = '<i class="fas fa-list-ol"></i>';
-        lineNumbersBtn.addEventListener('click', () => {
-            this.handleCommand('toggleLineNumbers');
-        });
+        lineNumbersBtn.addEventListener('click', () => this.handleCommand('toggleLineNumbers'));
         header.appendChild(lineNumbersBtn);
         
         // Copy button
@@ -372,14 +378,10 @@ class CodeModule extends HtmlModule {
         copyButton.addEventListener('click', () => {
             navigator.clipboard.writeText(this.code)
                 .then(() => {
-                    if (typeof terminal !== 'undefined') {
-                        terminal.addOutput('[INFO] Code copied to clipboard');
-                    }
+                    console.log('Code copied to clipboard');
                 })
                 .catch(() => {
-                    if (typeof terminal !== 'undefined') {
-                        terminal.addOutput('[ERROR] Failed to copy code');
-                    }
+                    console.error('Failed to copy code');
                 });
         });
         header.appendChild(copyButton);
@@ -389,9 +391,7 @@ class CodeModule extends HtmlModule {
         runButton.className = 'ide-button';
         runButton.title = 'Run Code';
         runButton.innerHTML = '<i class="fas fa-play"></i>';
-        runButton.addEventListener('click', () => {
-            this.executeCode();
-        });
+        runButton.addEventListener('click', () => this.executeCode());
         header.appendChild(runButton);
         
         this.container.appendChild(header);
@@ -404,9 +404,7 @@ class CodeModule extends HtmlModule {
             <span>Editor</span>
             <span class="toggle-icon">▼</span>
         `;
-        editorHeader.addEventListener('click', () => {
-            this.handleCommand('toggleEditor');
-        });
+        editorHeader.addEventListener('click', () => this.handleCommand('toggleEditor'));
         this.container.appendChild(editorHeader);
         
         // Create collapsible code editor wrapper
@@ -463,9 +461,7 @@ class CodeModule extends HtmlModule {
             <span>Execution Results</span>
             <span class="toggle-icon">▼</span>
         `;
-        resultsHeader.addEventListener('click', () => {
-            this.handleCommand('toggleResults');
-        });
+        resultsHeader.addEventListener('click', () => this.handleCommand('toggleResults'));
         this.container.appendChild(resultsHeader);
         
         // Results panel
@@ -519,7 +515,7 @@ class CodeModule extends HtmlModule {
         
         if (!resultArea || !statusItem) return false;
         
-        // Update status to running
+        // Update status to "running"
         statusItem.innerHTML = '<span class="execution-running">Running...</span>';
         
         if (this.resultsCollapsed) {
@@ -527,26 +523,20 @@ class CodeModule extends HtmlModule {
             this.updateCollapsibleState();
         }
         
-        if (typeof terminal !== 'undefined') {
-            terminal.addOutput(`[INFO] Executing ${this.language} code...`);
-        }
+        console.log(`Executing ${this.language} code...`);
         
         setTimeout(() => {
             let outputText = '';
-            
             if (this.language.toLowerCase() === 'javascript') {
                 try {
                     const originalLog = console.log;
                     const logs = [];
-                    
                     console.log = function() {
                         logs.push(Array.from(arguments).join(' '));
                         originalLog.apply(console, arguments);
                     };
-                    
                     try {
                         const result = new Function(this.code)();
-                        
                         if (logs.length > 0) {
                             outputText = logs.join('\n');
                         } else if (result !== undefined) {
@@ -554,13 +544,11 @@ class CodeModule extends HtmlModule {
                         } else {
                             outputText = 'Code executed successfully with no output.';
                         }
-                        
                         statusItem.innerHTML = '<span class="execution-success">Success</span>';
                     } catch (e) {
                         outputText = `Error: ${e.message}\n\nStack trace:\n${e.stack}`;
                         statusItem.innerHTML = '<span class="execution-error">Error</span>';
                     }
-                    
                     console.log = originalLog;
                 } catch (e) {
                     outputText = `Could not execute code: ${e.message}`;
@@ -573,25 +561,21 @@ class CodeModule extends HtmlModule {
                 outputText += `Characters: ${this.code.length}\n`;
                 outputText += '---\n';
                 outputText += 'Note: Actual execution only available for JavaScript';
-                
                 statusItem.innerHTML = '<span class="execution-success">Simulated</span>';
             }
-            
             resultArea.innerHTML = '';
             const pre = document.createElement('pre');
             pre.textContent = outputText;
             resultArea.appendChild(pre);
             
-            if (typeof terminal !== 'undefined') {
-                terminal.addOutput(`[INFO] Code execution complete`);
-            }
+            console.log(`Code execution complete`);
         }, 300);
         
         return true;
     }
 }
 
-// Register for NodeJS compatibility
+// Export for module system
 if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
     module.exports = CodeModule;
 }

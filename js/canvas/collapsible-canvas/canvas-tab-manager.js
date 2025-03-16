@@ -105,7 +105,7 @@ class CanvasTabManager {
             });
         }
         
-        // Add to tabs list
+        // Add tab to the tabs list container
         this.canvasManager.tabsList.appendChild(tab);
         
         return tab;
@@ -169,17 +169,17 @@ class CanvasTabManager {
             return;
         }
         
-        // Try to find existing context menu from either implementation
-        this.contextMenu = document.getElementById('canvas-tab-context-menu') || 
-                          document.getElementById('canvasTabContextMenu');
+        // Try to find an existing context menu element
+        this.contextMenu = document.getElementById('canvas-tab-context-menu') ||
+                           document.getElementById('canvasTabContextMenu');
         
-        // Create context menu if it doesn't exist
+        // Create a new context menu if none exists
         if (!this.contextMenu) {
             console.log("Creating new context menu");
             this.contextMenu = document.createElement('div');
             this.contextMenu.id = 'canvas-tab-context-menu';
             this.contextMenu.className = 'context-menu';
-            this.contextMenu.style.display = 'none'; // Explicitly set display none
+            this.contextMenu.style.display = 'none'; // Hide initially
             this.contextMenu.innerHTML = `
                 <ul>
                     <li data-action="new"><i class="fas fa-plus"></i> New Canvas</li>
@@ -193,7 +193,7 @@ class CanvasTabManager {
                 </ul>
             `;
             
-            // Add inline styles for critical properties
+            // Apply critical inline styles
             this.contextMenu.style.position = 'fixed';
             this.contextMenu.style.zIndex = '2000';
             this.contextMenu.style.backgroundColor = '#252525';
@@ -205,7 +205,7 @@ class CanvasTabManager {
         } else {
             console.log("Using existing context menu:", this.contextMenu.id);
             
-            // Make sure the "New Canvas" option is added if it doesn't exist
+            // Ensure the "New Canvas" option is present
             if (!this.contextMenu.querySelector('li[data-action="new"], .context-menu-item[data-action="new"]')) {
                 const ul = this.contextMenu.querySelector('ul');
                 if (ul) {
@@ -217,30 +217,26 @@ class CanvasTabManager {
             }
         }
         
-        // Track which tab was right-clicked
+        // Variable to track the tab that was right-clicked
         let targetTabId = null;
         
-        // Remove any existing context menu handler
+        // Remove any previous context menu handler
         if (this._contextMenuHandler) {
             this.canvasManager.tabsContainer.removeEventListener('contextmenu', this._contextMenuHandler);
         }
         
-        // Context menu handler function
+        // Define context menu handler function
         this._contextMenuHandler = (e) => {
             const tab = e.target.closest('.canvas-tab');
             if (!tab) return;
             
             e.preventDefault();
-            
-            // Store the target tab ID
             targetTabId = tab.dataset.canvasId;
-            
-            // Position and show context menu
             this.contextMenu.style.left = `${e.pageX}px`;
             this.contextMenu.style.top = `${e.pageY}px`;
             this.contextMenu.style.display = 'block';
             
-            // Add one-time event listener to hide on click outside
+            // Add a one-time click handler to hide the context menu when clicking outside
             setTimeout(() => {
                 document.addEventListener('click', function hideMenu(e) {
                     if (!this.contextMenu.contains(e.target)) {
@@ -251,10 +247,10 @@ class CanvasTabManager {
             }, 10);
         };
         
-        // Add context menu event to tabs container
+        // Add context menu listener to tabs container
         this.canvasManager.tabsContainer.addEventListener('contextmenu', this._contextMenuHandler);
         
-        // Handle escape key
+        // Handle Escape key to hide the context menu
         if (this._escapeHandler) {
             document.removeEventListener('keydown', this._escapeHandler);
         }
@@ -267,18 +263,15 @@ class CanvasTabManager {
         
         document.addEventListener('keydown', this._escapeHandler);
         
-        // Handle context menu actions
+        // Handle clicks on context menu items
         if (this._menuClickHandler) {
             this.contextMenu.removeEventListener('click', this._menuClickHandler);
         }
         
         this._menuClickHandler = (e) => {
-            // Try to find the action from either li element or .context-menu-item
-            const action = e.target.closest('li')?.dataset.action || 
-                          e.target.closest('.context-menu-item')?.dataset.action;
-                          
+            const action = e.target.closest('li')?.dataset.action ||
+                           e.target.closest('.context-menu-item')?.dataset.action;
             if (!action || !targetTabId) return;
-            
             this.handleContextMenuAction(action, targetTabId);
             this.contextMenu.style.display = 'none';
         };
@@ -289,43 +282,35 @@ class CanvasTabManager {
     }
     
     /**
-     * Handle a context menu action
-     * @param {string} action - Action name
-     * @param {string} tabId - Target tab ID
+     * Handle a context menu action.
+     * @param {string} action - Action name.
+     * @param {string} tabId - Target tab ID.
      */
     handleContextMenuAction(action, tabId) {
         const manager = this.canvasManager;
-        
         switch (action) {
             case 'new':
                 manager.addNewCanvas('New Canvas');
                 break;
-                
             case 'rename':
                 const newName = prompt('Enter new name for canvas:', '');
                 if (newName) manager.renameCanvas(tabId, newName);
                 break;
-                
             case 'duplicate':
-                const instance = manager.canvasInstances.find(instance => instance.id === tabId);
+                const instance = manager.canvasInstances.find(inst => inst.id === tabId);
                 if (instance) {
-                    // Simple duplication - in real implementation we would copy canvas content
                     manager.addNewCanvas(`${instance.title} (Copy)`);
                 }
                 break;
-                
             case 'minimize':
                 manager.minimizeCanvas(tabId);
                 break;
-                
             case 'close':
                 manager.closeCanvas(tabId);
                 break;
-                
             case 'closeOthers':
                 manager.closeOtherCanvases(tabId);
                 break;
-                
             case 'closeAll':
                 manager.closeAllCanvases();
                 break;
@@ -333,18 +318,15 @@ class CanvasTabManager {
     }
     
     /**
-     * Clean up event listeners
+     * Clean up event listeners.
      */
     cleanup() {
-        // Clean up context menu event listeners
         if (this._contextMenuHandler) {
             this.canvasManager.tabsContainer.removeEventListener('contextmenu', this._contextMenuHandler);
         }
-        
         if (this._escapeHandler) {
             document.removeEventListener('keydown', this._escapeHandler);
         }
-        
         if (this._menuClickHandler && this.contextMenu) {
             this.contextMenu.removeEventListener('click', this._menuClickHandler);
         }

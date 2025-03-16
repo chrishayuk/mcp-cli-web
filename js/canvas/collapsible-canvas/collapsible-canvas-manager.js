@@ -12,22 +12,25 @@ class CollapsibleCanvasManager extends CanvasManager {
         this.minimizedCanvases = [];
         this.activeCanvasId = null;
         
-        // Initialize the system components in the proper order
-        this.initDOMElements();     // First ensure DOM elements exist
-        this.initComponents();      // Then initialize component systems
-        this.initDefaultState();    // Finally set up the default state
+        // Initialize the system components in the proper order:
+        // 1. Ensure DOM elements exist.
+        // 2. Initialize component systems.
+        // 3. Set up the default state.
+        this.initDOMElements();
+        this.initComponents();
+        this.initDefaultState();
         
         console.log("CollapsibleCanvasManager initialized successfully");
     }
     
     /**
-     * Initialize DOM elements required by the system
+     * Initialize DOM elements required by the system.
      */
     initDOMElements() {
         this.DOMManager = new CanvasDOMManager(this);
         this.DOMManager.initialize();
         
-        // Store crucial DOM references locally for direct access
+        // Store crucial DOM references locally for easy access.
         this.canvasContainer = this.DOMManager.canvasContainer;
         this.mainContainer = this.DOMManager.mainContainer;
         this.terminalWindow = this.DOMManager.terminalWindow;
@@ -38,10 +41,10 @@ class CollapsibleCanvasManager extends CanvasManager {
     }
     
     /**
-     * Initialize component systems using dependency injection
+     * Initialize component systems using dependency injection.
      */
     initComponents() {
-        // Set up component managers with proper reference to this instance
+        // Set up component managers with the proper reference to this instance.
         this.setupManager = new CanvasSetupManager(this);
         this.setupManager.initialize();
         
@@ -53,18 +56,18 @@ class CollapsibleCanvasManager extends CanvasManager {
     }
     
     /**
-     * Initialize default state of the canvas system
+     * Initialize the default state of the canvas system.
      */
     initDefaultState() {
-        // Collapse canvas section by default
+        // Collapse the canvas section by default.
         this.collapseCanvasSection();
         
-        // Create main canvas but don't display it yet
+        // Create a main canvas but do not display it immediately.
         this.addNewCanvas('Canvas Display', 'main', false);
     }
     
     /**
-     * Toggle canvas section between collapsed and expanded
+     * Toggle the canvas section between collapsed and expanded.
      */
     toggleCanvasSection() {
         if (this.canvasWindow.classList.contains('collapsed')) {
@@ -75,42 +78,43 @@ class CollapsibleCanvasManager extends CanvasManager {
     }
     
     /**
-     * Collapse canvas section
+     * Collapse the canvas section.
      */
     collapseCanvasSection() {
         this.layoutManager.collapseCanvasSection();
     }
     
     /**
-     * Expand canvas section
+     * Expand the canvas section.
      */
     expandCanvasSection() {
         this.layoutManager.expandCanvasSection();
     }
     
     /**
-     * Add a new canvas
-     * @param {string} title - Canvas title
-     * @param {string} id - Canvas ID (optional, generated if not provided)
-     * @param {boolean} activate - Whether to activate the canvas immediately (default: true)
+     * Add a new canvas instance.
+     * @param {string} title - Canvas title.
+     * @param {string} id - Canvas ID (optional; generated if not provided).
+     * @param {boolean} activate - Whether to activate the canvas immediately (default: true).
+     * @returns {string|null} - The canvas instance ID, or null if creation failed.
      */
     addNewCanvas(title, id = null, activate = true) {
         id = id || 'canvas-' + Date.now();
         
-        // Use canvas instance factory to create the canvas instance
+        // Create a new canvas instance.
         const instance = this.createCanvasInstance(title, id);
         if (!instance) {
             console.error("Failed to create canvas instance");
             return null;
         }
         
-        // Register the canvas instance
+        // Register the new canvas instance.
         this.canvasInstances.push(instance);
         
-        // Create and add tab for this canvas
+        // Create and add a corresponding tab.
         this.tabManager.createTab(title, id);
         
-        // Activate this canvas if requested
+        // Activate the new canvas if requested.
         if (activate) {
             this.activateCanvas(id);
             this.expandCanvasSection();
@@ -120,33 +124,33 @@ class CollapsibleCanvasManager extends CanvasManager {
     }
     
     /**
-     * Create a canvas instance (factory method)
-     * @param {string} title - Canvas title
-     * @param {string} id - Canvas ID
-     * @returns {Object} - Canvas instance object
+     * Create a canvas instance (factory method).
+     * @param {string} title - Canvas title.
+     * @param {string} id - Canvas ID.
+     * @returns {Object|null} - The canvas instance object, or null on failure.
      */
     createCanvasInstance(title, id) {
-        // Ensure canvas container exists
+        // Ensure the canvas container exists.
         if (!this.DOMManager.ensureCanvasContainer()) {
             return null;
         }
         
-        // Create canvas instance container
+        // Create the container for the canvas instance.
         const container = document.createElement('div');
         container.className = 'canvas-instance';
         container.dataset.canvasId = id;
         
-        // Create canvas element
+        // Create the actual canvas element.
         const canvas = document.createElement('canvas');
         canvas.width = 800;
         canvas.height = 600;
         canvas.id = `canvas-${id}`;
         container.appendChild(canvas);
         
-        // Create title bar (hidden by CSS)
+        // Create a hidden title bar (styled via CSS).
         const titleBar = document.createElement('div');
         titleBar.className = 'canvas-titlebar';
-        titleBar.style.display = 'none'; // Hide with inline style
+        titleBar.style.display = 'none';
         titleBar.innerHTML = `
             <div class="canvas-title">
                 <i class="fas fa-desktop"></i>
@@ -159,7 +163,7 @@ class CollapsibleCanvasManager extends CanvasManager {
         `;
         container.appendChild(titleBar);
         
-        // Create instructions overlay
+        // Create an instructions overlay.
         const instructions = document.createElement('div');
         instructions.className = 'instructions-overlay';
         instructions.innerHTML = `
@@ -169,7 +173,7 @@ class CollapsibleCanvasManager extends CanvasManager {
         `;
         container.appendChild(instructions);
         
-        // Add controls
+        // Add control buttons (e.g., zoom in/out, reset view).
         const controls = document.createElement('div');
         controls.className = 'canvas-controls';
         controls.innerHTML = `
@@ -185,10 +189,10 @@ class CollapsibleCanvasManager extends CanvasManager {
         `;
         container.appendChild(controls);
         
-        // Add to canvas container
+        // Append the canvas instance container to the main canvas container.
         this.canvasContainer.appendChild(container);
         
-        // Create and return canvas instance object
+        // Return the instance object.
         return {
             id,
             title,
@@ -200,14 +204,15 @@ class CollapsibleCanvasManager extends CanvasManager {
     }
     
     /**
-     * Activate a specific canvas
-     * @param {string} id - Canvas ID to activate
+     * Activate a specific canvas instance.
+     * @param {string} id - Canvas ID to activate.
+     * @returns {CollapsibleCanvasManager} - This canvas manager instance.
      */
     activateCanvas(id) {
-        // Ensure tabsList still exists
+        // Ensure that the tabs list exists.
         this.DOMManager.ensureTabsList();
         
-        // 1. Deactivate the previously active module (if any)
+        // 1. Deactivate the previously active module (if any).
         if (this.activeCanvasId && this.activeCanvasId !== id) {
             const oldInstance = this.canvasInstances.find(inst => inst.id === this.activeCanvasId);
             if (oldInstance && oldInstance.currentModule) {
@@ -215,64 +220,53 @@ class CollapsibleCanvasManager extends CanvasManager {
             }
         }
         
-        // 2. Hide all other canvas instances, show only the target
+        // 2. Hide all other canvas instances; show only the target.
         this.canvasInstances.forEach(instance => {
-            if (instance.id === id) {
-                instance.container.style.display = 'flex';  // or 'block'
-            } else {
-                instance.container.style.display = 'none';
-            }
+            instance.container.style.display = (instance.id === id) ? 'flex' : 'none';
         });
         
-        // 3. Update tab classes
-        // Remove 'active' from the previously active tab/canvas
+        // 3. Update tab classes: remove 'active' from the old, add to the new.
         if (this.activeCanvasId) {
             const prevTab = this.tabsList.querySelector(`.canvas-tab[data-canvas-id="${this.activeCanvasId}"]`);
             if (prevTab) prevTab.classList.remove('active');
             const prevCanvas = document.querySelector(`.canvas-instance[data-canvas-id="${this.activeCanvasId}"]`);
             if (prevCanvas) prevCanvas.classList.remove('active');
         }
-        
-        // Add 'active' to the new tab/canvas
         const newTab = this.tabsList.querySelector(`.canvas-tab[data-canvas-id="${id}"]`);
         const newCanvas = document.querySelector(`.canvas-instance[data-canvas-id="${id}"]`);
         if (newTab) newTab.classList.add('active');
         if (newCanvas) newCanvas.classList.add('active');
         
-        // 4. Update activeCanvasId
+        // 4. Update activeCanvasId.
         this.activeCanvasId = id;
         
-        // 5. If it was minimized, restore it
+        // 5. If the canvas was minimized, restore it.
         this.restoreCanvas(id);
         
-        // 6. Update references and activate the new module
+        // 6. Update references and activate the module in the new instance.
         this.updateCanvasReferences(id);
         
         return this;
     }
     
     /**
-     * Update canvas references when activating a canvas
-     * @param {string} id - Canvas ID
+     * Update canvas references when a canvas is activated.
+     * @param {string} id - Canvas ID.
      */
     updateCanvasReferences(id) {
         const instance = this.canvasInstances.find(inst => inst.id === id);
         if (!instance) return;
         
-        // Update canvas and context
+        // Update the main canvas and context references.
         this.canvas = instance.canvas;
         this.ctx = instance.ctx;
         
-        // If there's a module, activate it
+        // Activate the module associated with this instance (if any).
         if (instance.currentModule) {
             this.currentModule = instance.currentModule;
-            
-            // Force module activation
             if (this.currentModule && typeof this.currentModule.activate === 'function') {
                 setTimeout(() => {
                     this.currentModule.activate();
-                    
-                    // Update module switcher if it exists
                     if (this.moduleSwitcher && this.currentModule.moduleName) {
                         this.updateModuleSwitcher(this.currentModule.moduleName);
                     }
@@ -280,7 +274,7 @@ class CollapsibleCanvasManager extends CanvasManager {
             }
         }
         
-        // Update title in main titlebar
+        // Update the main titlebar with the instance's title.
         const titleElement = document.querySelector('.canvas-window .canvas-titlebar .canvas-title span');
         if (titleElement && instance.title) {
             titleElement.textContent = instance.title;
@@ -288,20 +282,16 @@ class CollapsibleCanvasManager extends CanvasManager {
     }
     
     /**
-     * Update the module switcher UI
-     * @param {string} moduleName - Name of active module
+     * Update the module switcher UI to reflect the active module.
+     * @param {string} moduleName - Name of the active module.
      */
     updateModuleSwitcher(moduleName) {
         if (!this.moduleSwitcher) return;
-        
-        // Reset all buttons
         const buttons = this.moduleSwitcher.querySelectorAll('.module-button');
         buttons.forEach(button => {
             button.dataset.active = "false";
             button.classList.remove('active');
         });
-        
-        // Set active button
         const activeButton = this.moduleSwitcher.querySelector(`.module-button[data-module="${moduleName}"]`);
         if (activeButton) {
             activeButton.dataset.active = "true";
@@ -310,11 +300,12 @@ class CollapsibleCanvasManager extends CanvasManager {
     }
     
     /**
-     * Close a canvas
-     * @param {string} id - Canvas ID to close
+     * Close a canvas instance.
+     * @param {string} id - Canvas ID to close.
+     * @returns {boolean} - Whether the canvas was successfully closed.
      */
     closeCanvas(id) {
-        // If there's only one canvas left, we won't close it
+        // Do not close if it's the last canvas.
         if (this.canvasInstances.length <= 1) {
             this.collapseCanvasSection();
             return false;
@@ -323,29 +314,29 @@ class CollapsibleCanvasManager extends CanvasManager {
         const instance = this.canvasInstances.find(inst => inst.id === id);
         if (!instance) return false;
         
-        // Remove tab element
+        // Remove the associated tab.
         this.tabManager.removeTab(id);
         
-        // Remove the DOM element for this canvas
+        // Remove the canvas instance from the DOM.
         if (instance.container && instance.container.parentNode) {
             instance.container.parentNode.removeChild(instance.container);
         }
         
-        // Remove from minimized list
+        // If the canvas was minimized, restore it first.
         this.restoreCanvas(id);
         
-        // Remove from our array
+        // Remove the instance from the array.
         const index = this.canvasInstances.findIndex(inst => inst.id === id);
         if (index !== -1) {
             this.canvasInstances.splice(index, 1);
         }
         
-        // If closing the active one, activate another
+        // If the closed canvas was active, activate another one.
         if (this.activeCanvasId === id && this.canvasInstances.length > 0) {
             this.activateCanvas(this.canvasInstances[0].id);
         }
         
-        // If no canvases left, collapse
+        // If no canvases remain, collapse the canvas section.
         if (this.canvasInstances.length === 0) {
             this.collapseCanvasSection();
         }
@@ -354,29 +345,28 @@ class CollapsibleCanvasManager extends CanvasManager {
     }
     
     /**
-     * Close all canvases except one
-     * @param {string} exceptId - ID of canvas to keep open
+     * Close all canvases except the one specified.
+     * @param {string} exceptId - ID of the canvas to keep open.
+     * @returns {boolean} - Whether the operation was successful.
      */
     closeOtherCanvases(exceptId) {
         const toClose = this.canvasInstances
             .filter(inst => inst.id !== exceptId)
             .map(inst => inst.id);
-        
         toClose.forEach(id => this.closeCanvas(id));
         return true;
     }
     
     /**
-     * Close all canvases and create a new default one
+     * Close all canvases and create a new default one.
+     * @returns {boolean} - Whether the operation was successful.
      */
     closeAllCanvases() {
         const toClose = this.canvasInstances.map(inst => inst.id);
         toClose.forEach(id => this.closeCanvas(id));
         
-        // Collapse canvas section
         this.collapseCanvasSection();
         
-        // Create a new canvas if all are closed
         if (this.canvasInstances.length === 0) {
             this.addNewCanvas('Canvas Display', null, false);
         }
@@ -385,28 +375,31 @@ class CollapsibleCanvasManager extends CanvasManager {
     }
     
     /**
-     * Rename a canvas
+     * Rename a canvas instance.
+     * @param {string} id - Canvas ID to rename.
+     * @param {string} newName - New canvas name.
+     * @returns {boolean} - Whether the renaming was successful.
      */
     renameCanvas(id, newName) {
         if (!newName) return false;
         
-        // Update tab title
+        // Update the tab title.
         this.tabManager.updateTabTitle(id, newName);
         
-        // Update local canvas
+        // Update the canvas instance's title in the DOM.
         const canvas = document.querySelector(`.canvas-instance[data-canvas-id="${id}"]`);
         if (canvas) {
             const titleSpan = canvas.querySelector('.canvas-title span');
             if (titleSpan) titleSpan.textContent = newName;
         }
         
-        // If it's active, also update main titlebar
+        // Also update the main titlebar if this is the active canvas.
         if (id === this.activeCanvasId) {
             const mainTitleSpan = document.querySelector('.canvas-window .canvas-titlebar .canvas-title span');
             if (mainTitleSpan) mainTitleSpan.textContent = newName;
         }
         
-        // Update in our array
+        // Update the instance in the internal array.
         const instance = this.canvasInstances.find(inst => inst.id === id);
         if (instance) {
             instance.title = newName;
@@ -416,12 +409,13 @@ class CollapsibleCanvasManager extends CanvasManager {
     }
     
     /**
-     * Minimize a canvas
+     * Minimize a canvas instance.
+     * @param {string} id - Canvas ID to minimize.
+     * @returns {boolean} - Whether minimization was successful.
      */
     minimizeCanvas(id) {
         this.DOMManager.ensureMinimizedContainer();
         
-        // If it's already minimized, do nothing
         if (this.minimizedCanvases.includes(id)) {
             return false;
         }
@@ -431,14 +425,11 @@ class CollapsibleCanvasManager extends CanvasManager {
         const instance = this.canvasInstances.find(inst => inst.id === id);
         if (!instance) return false;
         
-        // Create minimized representation
         const minimized = this.createMinimizedElement(id, instance.title);
         this.minimizedContainer.appendChild(minimized);
         
-        // Update tab
         this.tabManager.setTabMinimized(id, true);
         
-        // If it's active, activate another
         if (this.activeCanvasId === id) {
             this.activateAnotherCanvas(id);
         }
@@ -447,7 +438,10 @@ class CollapsibleCanvasManager extends CanvasManager {
     }
     
     /**
-     * Create minimized element
+     * Create a minimized element for a canvas instance.
+     * @param {string} id - Canvas ID.
+     * @param {string} title - Canvas title.
+     * @returns {HTMLElement} - The minimized element.
      */
     createMinimizedElement(id, title) {
         const minimized = document.createElement('div');
@@ -457,25 +451,22 @@ class CollapsibleCanvasManager extends CanvasManager {
             <i class="fas fa-desktop minimized-canvas-icon"></i>
             <span>${title}</span>
         `;
-        
-        // Restore on click
         minimized.addEventListener('click', () => {
             this.restoreCanvas(id);
             this.activateCanvas(id);
             this.expandCanvasSection();
         });
-        
         return minimized;
     }
     
     /**
-     * Activate another canvas if the current one is minimized or closed
+     * Activate another canvas instance when the current one is minimized or closed.
+     * @param {string} currentId - ID of the canvas being closed or minimized.
      */
     activateAnotherCanvas(currentId) {
         const nextCanvas = this.canvasInstances.find(
             inst => !this.minimizedCanvases.includes(inst.id) && inst.id !== currentId
         );
-        
         if (nextCanvas) {
             this.activateCanvas(nextCanvas.id);
         } else {
@@ -484,7 +475,9 @@ class CollapsibleCanvasManager extends CanvasManager {
     }
     
     /**
-     * Restore a minimized canvas
+     * Restore a minimized canvas instance.
+     * @param {string} id - Canvas ID to restore.
+     * @returns {boolean} - Whether restoration was successful.
      */
     restoreCanvas(id) {
         const index = this.minimizedCanvases.indexOf(id);
@@ -498,43 +491,40 @@ class CollapsibleCanvasManager extends CanvasManager {
         }
         
         this.tabManager.setTabMinimized(id, false);
-        
         return true;
     }
     
     /**
-     * Register a module with the canvas manager
+     * Register a module with the canvas manager.
+     * @param {string} name - Module name.
+     * @param {CanvasModule} module - Module instance.
+     * @returns {CollapsibleCanvasManager} - This canvas manager instance.
      */
     registerModule(name, module) {
-        // Normal registration from the parent CanvasManager
         super.registerModule(name, module);
-        
-        // Store the name
         module.moduleName = name;
-        
-        // Register with the currently active canvas instance
         this.registerModuleWithActiveCanvas(name, module);
-        
         return this;
     }
     
     /**
-     * Register a module with the currently active canvas
+     * Register a module with the currently active canvas.
+     * @param {string} name - Module name.
+     * @param {CanvasModule} module - Module instance.
      */
     registerModuleWithActiveCanvas(name, module) {
         const instance = this.canvasInstances.find(inst => inst.id === this.activeCanvasId);
         if (!instance) return;
-        
-        // Clone the module to avoid shared state
         const moduleClone = this.cloneModule(module, name);
-        
-        // Initialize the clone
         moduleClone.init(instance.canvas, instance.ctx, this);
         instance.modules.set(name, moduleClone);
     }
     
     /**
-     * Clone a canvas module
+     * Clone a canvas module.
+     * @param {CanvasModule} module - Original module.
+     * @param {string} name - Module name.
+     * @returns {CanvasModule} - Cloned module.
      */
     cloneModule(module, name) {
         try {
@@ -550,46 +540,42 @@ class CollapsibleCanvasManager extends CanvasManager {
     }
     
     /**
-     * Activate a module by name
+     * Activate a module by name.
+     * @param {string} name - Module name to activate.
+     * @returns {boolean} - Whether activation was successful.
      */
     activateModule(name) {
-        // Try instance-specific module
         const instance = this.canvasInstances.find(inst => inst.id === this.activeCanvasId);
         if (instance && instance.modules.has(name)) {
             return this.activateInstanceModule(instance, name);
         } else {
-            // Fall back to original CanvasManager behavior
             return this.activateFallbackModule(name);
         }
     }
     
     /**
-     * Activate an instance-specific module
+     * Activate an instance-specific module.
+     * @param {Object} instance - Canvas instance.
+     * @param {string} name - Module name.
+     * @returns {boolean} - Success status.
      */
     activateInstanceModule(instance, name) {
         const module = instance.modules.get(name);
-        
-        // Deactivate the old module
         if (this.currentModule) {
             this.currentModule.deactivate();
         }
-        
-        // Activate the new module
         this.currentModule = module;
         this.currentModule.activate();
-        
-        // Keep track in the instance
         instance.currentModule = this.currentModule;
-        
-        // Update the switcher
         this.updateModuleSwitcher(name);
-        
         console.log(`Activated module: ${name} for canvas: ${instance.id}`);
         return true;
     }
     
     /**
-     * Activate a module using the original CanvasManager method
+     * Activate a module using the original CanvasManager method.
+     * @param {string} name - Module name.
+     * @returns {boolean} - Success status.
      */
     activateFallbackModule(name) {
         const result = super.activateModule(name);
@@ -601,35 +587,26 @@ class CollapsibleCanvasManager extends CanvasManager {
 }
 
 /**
- * Initialize collapsible canvas system
- * This function replaces the existing canvas manager with the collapsible one
+ * Initialize the collapsible canvas system.
+ * This function replaces the existing canvas manager with the collapsible one.
  */
 function initCollapsibleCanvasSystem() {
     console.log("Starting collapsible canvas system initialization");
-    
     try {
         // Create the collapsible canvas manager
         const collapsibleManager = new CollapsibleCanvasManager();
-        
-        // Replace the existing canvas manager
         if (window.Commands && window.Commands.canvasManager) {
             const oldManager = window.Commands.canvasManager;
-            
-            // Copy over previously registered modules
             if (oldManager.modules) {
                 oldManager.modules.forEach((module, name) => {
                     collapsibleManager.registerModule(name, module);
                 });
             }
-            
-            // Swap out the manager
             window.Commands.canvasManager = collapsibleManager;
-            
             console.log("Initialized collapsible canvas system");
         } else {
             console.error("Commands.canvasManager not found, cannot initialize collapsible system");
         }
-        
         return collapsibleManager;
     } catch (error) {
         console.error("Error initializing collapsible canvas system:", error);

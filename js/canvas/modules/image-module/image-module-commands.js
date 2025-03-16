@@ -18,19 +18,21 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 /**
- * Extend the command processor with image-specific commands
+ * Extend the command processor with image-specific commands.
  */
 function extendImageCommands() {
     const originalProcessCommand = window.Commands.processCommand;
     
-    // Replace the existing processCommand
+    // Replace the existing processCommand with our extended version
     window.Commands.processCommand = function(cmd) {
         const lowerCmd = cmd.toLowerCase().trim();
         
-        // Helper to expand + activate image module
+        // Helper: expand + activate image module.
         function expandAndActivateImage() {
             const cm = window.Commands.canvasManager;
+            // Expand the canvas section
             cm.expandCanvasSection();
+            // Activate the image module
             cm.activateModule('image');
             return cm.getModule('image');
         }
@@ -40,21 +42,21 @@ function extendImageCommands() {
             try {
                 const imageModule = expandAndActivateImage();
                 
-                // Extract URL after the command
+                // Extract URL after the word "image"
                 let url = cmd.substring(cmd.indexOf('image') + 5).trim();
                 if (!url) {
-                    // fallback to random
+                    // If no URL, fallback to random image
                     imageModule.handleCommand('random');
                     return true;
                 }
                 
-                // If user typed "show image random"
+                // If user typed "show image random", call random command
                 if (url === 'random') {
                     imageModule.handleCommand('random');
                     return true;
                 }
                 
-                // Otherwise display the specified URL
+                // Otherwise, display the specified URL
                 imageModule.handleCommand('display', [url]);
                 return true;
             } catch (e) {
@@ -65,7 +67,6 @@ function extendImageCommands() {
                 return false;
             }
         }
-        
         // 2. "random image"
         else if (lowerCmd === 'random image') {
             try {
@@ -77,19 +78,16 @@ function extendImageCommands() {
                 return false;
             }
         }
-        
-        // 3. "zoom image +", "zoom image -", or "zoom image reset"
+        // 3. "zoom image [action]"
         else if (lowerCmd.startsWith('zoom image')) {
             try {
                 const parts = lowerCmd.split(' ');
-                // e.g. "zoom image +" => parts[2] = '+'
+                // Expecting format "zoom image +" or "zoom image -" or "zoom image reset"
                 const action = parts.length > 2 ? parts[2] : null;
-                
                 const imageModule = expandAndActivateImage();
                 if (action) {
                     imageModule.handleCommand('zoom', [action]);
                 } else {
-                    // If no action, do nothing or show help
                     if (typeof terminal !== 'undefined') {
                         terminal.addOutput('[INFO] Usage: zoom image + | - | reset');
                     }
@@ -100,7 +98,6 @@ function extendImageCommands() {
                 return false;
             }
         }
-        
         // 4. "image info" or "show image info"
         else if (lowerCmd === 'image info' || lowerCmd === 'show image info') {
             try {
@@ -112,23 +109,20 @@ function extendImageCommands() {
                 return false;
             }
         }
-        
         // 5. "image theme [dark|light|toggle]"
         else if (lowerCmd.startsWith('image theme')) {
             try {
                 const cm = window.Commands.canvasManager;
                 cm.expandCanvasSection();
                 cm.activateModule('image');
-                
                 const imageModule = cm.getModule('image');
                 
-                // Extract the theme
+                // Extract the theme from the command; default is dark
                 const parts = lowerCmd.split(' ');
-                let theme = 'dark'; // default
+                let theme = 'dark';
                 if (parts.length > 2) {
                     theme = parts[2].trim();
                 }
-                
                 imageModule.handleCommand('theme', [theme]);
                 return true;
             } catch (e) {
@@ -137,19 +131,18 @@ function extendImageCommands() {
             }
         }
         
-        // Otherwise, fall back to original
+        // Otherwise, fall back to the original processCommand function.
         return originalProcessCommand.call(window.Commands, cmd);
     };
 }
 
 /**
- * Add image command suggestions to the command suggestions UI
+ * Add image command suggestions to the command suggestions UI.
  */
 function addImageCommandSuggestions() {
     const suggestionsContainer = document.getElementById('command-suggestions');
     if (!suggestionsContainer) return;
     
-    // Check if there's already an image suggestion
     let hasImageSuggestion = false;
     Array.from(suggestionsContainer.children).forEach(child => {
         if (child.textContent.includes('show image') || child.textContent.includes('random image')) {

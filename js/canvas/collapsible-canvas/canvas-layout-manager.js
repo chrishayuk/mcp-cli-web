@@ -186,7 +186,7 @@ class CanvasLayoutManager {
             if (activeCanvas && activeCanvas.container) {
                 activeCanvas.container.classList.add('active');
                 
-                // Re-activate the current module if there is one
+                // Re-activate the current module if it exists
                 if (activeCanvas.currentModule && typeof activeCanvas.currentModule.activate === 'function') {
                     setTimeout(() => {
                         activeCanvas.currentModule.activate();

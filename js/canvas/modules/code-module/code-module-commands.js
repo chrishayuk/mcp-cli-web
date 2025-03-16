@@ -23,6 +23,26 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 /**
+ * Helper function: ensures that the active canvas is a code instance.
+ * If not, creates a new canvas instance and activates the code module.
+ * Returns a reference to the active code module.
+ */
+function expandAndActivateCode() {
+    const cm = window.Commands.canvasManager;
+    const activeInstance = cm.canvasInstances.find(inst => inst.id === cm.activeCanvasId);
+    // If there is no active instance or its module isn't "code", create a new canvas
+    if (!activeInstance || (activeInstance.currentModule && activeInstance.currentModule.moduleName !== 'code')) {
+        // Create a new canvas instance with a default title for code
+        cm.addNewCanvas('New Code Canvas', null, true);
+    } else {
+        // Otherwise, just expand the canvas and activate the code module
+        cm.expandCanvasSection();
+        cm.activateModule('code');
+    }
+    return cm.getModule('code');
+}
+
+/**
  * Extend the command processor with code-specific commands
  */
 function extendCommandProcessor() {
@@ -33,18 +53,9 @@ function extendCommandProcessor() {
     window.Commands.processCommand = function(cmd) {
         const lowerCmd = cmd.toLowerCase().trim();
         
-        // Helper: expand + activate code
-        function expandAndActivateCode() {
-            const cm = window.Commands.canvasManager;
-            // Explicitly expand the canvas (remove if you prefer manual control)
-            cm.expandCanvasSection();
-            // Now activate the code module
-            cm.activateModule('code');
-            return cm.getModule('code');
-        }
-        
-        // 1. "display code" or "code" command
-        if (lowerCmd.startsWith('display code') || lowerCmd === 'display code' || lowerCmd === 'code' || lowerCmd.startsWith('code ')) {
+        // 1. "display code" or "code ..." command
+        if (lowerCmd.startsWith('display code') || lowerCmd === 'display code' ||
+            lowerCmd === 'code' || lowerCmd.startsWith('code ')) {
             try {
                 const codeModule = expandAndActivateCode();
                 
@@ -92,14 +103,12 @@ helloWorld();`;
         else if (lowerCmd.startsWith('run code') || lowerCmd === 'run code') {
             try {
                 const cm = window.Commands.canvasManager;
-                const codeModule = cm.getModule('code');
-                
-                // Expand & activate if needed
+                let codeModule = cm.getModule('code');
                 if (!codeModule || !codeModule.isActive) {
                     cm.expandCanvasSection();
                     cm.activateModule('code');
+                    codeModule = cm.getModule('code');
                 }
-                
                 codeModule.handleCommand('run');
                 return true;
             } catch (e) {
@@ -115,14 +124,12 @@ helloWorld();`;
         else if (lowerCmd.startsWith('code theme') || lowerCmd.startsWith('set code theme')) {
             try {
                 const cm = window.Commands.canvasManager;
-                // Expand + activate
                 cm.expandCanvasSection();
                 cm.activateModule('code');
-                
                 const codeModule = cm.getModule('code');
                 
-                // Extract theme name
-                let theme = 'dark'; // Default
+                // Extract theme name (default to dark)
+                let theme = 'dark';
                 if (lowerCmd.includes('light')) {
                     theme = 'light';
                 } else if (lowerCmd.includes('dark')) {
@@ -137,14 +144,12 @@ helloWorld();`;
             }
         }
         
-        // 4. "toggle line numbers"
+        // 4. "toggle line numbers" command
         else if (lowerCmd.includes('toggle line numbers') || lowerCmd.includes('line numbers')) {
             try {
                 const cm = window.Commands.canvasManager;
-                // Expand + activate
                 cm.expandCanvasSection();
                 cm.activateModule('code');
-                
                 const codeModule = cm.getModule('code');
                 codeModule.handleCommand('toggleLineNumbers');
                 return true;
@@ -154,13 +159,12 @@ helloWorld();`;
             }
         }
         
-        // 5. "toggle editor", "collapse editor", or "expand editor"
+        // 5. "toggle editor" / "collapse editor" / "expand editor"
         else if (lowerCmd.includes('toggle editor') || lowerCmd === 'collapse editor' || lowerCmd === 'expand editor') {
             try {
                 const cm = window.Commands.canvasManager;
                 cm.expandCanvasSection();
                 cm.activateModule('code');
-                
                 const codeModule = cm.getModule('code');
                 codeModule.handleCommand('toggleEditor');
                 return true;
@@ -170,13 +174,12 @@ helloWorld();`;
             }
         }
         
-        // 6. "toggle results", "collapse results", or "expand results"
+        // 6. "toggle results" / "collapse results" / "expand results"
         else if (lowerCmd.includes('toggle results') || lowerCmd === 'collapse results' || lowerCmd === 'expand results') {
             try {
                 const cm = window.Commands.canvasManager;
                 cm.expandCanvasSection();
                 cm.activateModule('code');
-                
                 const codeModule = cm.getModule('code');
                 codeModule.handleCommand('toggleResults');
                 return true;
@@ -186,17 +189,16 @@ helloWorld();`;
             }
         }
         
-        // 7. "set language" or "code language"
+        // 7. "set language" or "code language" command
         else if (lowerCmd.startsWith('set language') || lowerCmd.startsWith('code language')) {
             try {
                 const cm = window.Commands.canvasManager;
                 cm.expandCanvasSection();
                 cm.activateModule('code');
-                
                 const codeModule = cm.getModule('code');
                 
-                // Extract language from the command
-                let language = 'javascript'; // default
+                // Extract language; default is javascript
+                let language = 'javascript';
                 const parts = lowerCmd.split(' ');
                 if (parts.length > 2) {
                     language = parts[parts.length - 1].trim();
@@ -210,19 +212,19 @@ helloWorld();`;
             }
         }
         
-        // Fall back to original command processor
+        // Fall back to the original command processor
         return originalProcessCommand.call(window.Commands, cmd);
     };
 }
 
 /**
- * Add code module suggestions to the command suggestions UI
+ * Add code module suggestions to the command suggestions UI.
  */
 function addCodeCommandSuggestions() {
     const suggestionsContainer = document.getElementById('command-suggestions');
     if (!suggestionsContainer) return;
     
-    // Check if code suggestion already exists
+    // Check if a code suggestion already exists.
     let hasCodeSuggestion = false;
     Array.from(suggestionsContainer.children).forEach(child => {
         if (child.textContent.includes('code') || child.textContent.includes('display code')) {
@@ -230,14 +232,12 @@ function addCodeCommandSuggestions() {
         }
     });
     
-    // Only add if it doesn't exist
     if (!hasCodeSuggestion) {
         const codeSuggestion = document.createElement('span');
         codeSuggestion.className = 'command-suggestion';
         codeSuggestion.innerHTML = '<i class="fas fa-code"></i> display code';
         suggestionsContainer.appendChild(codeSuggestion);
         
-        // Add click event listener
         codeSuggestion.addEventListener('click', () => {
             const chatInput = document.getElementById('chat-input');
             if (chatInput) {
@@ -246,7 +246,6 @@ function addCodeCommandSuggestions() {
             }
         });
         
-        // Add another command suggestion for running code
         const runCodeSuggestion = document.createElement('span');
         runCodeSuggestion.className = 'command-suggestion';
         runCodeSuggestion.innerHTML = '<i class="fas fa-play"></i> run code';
@@ -263,8 +262,8 @@ function addCodeCommandSuggestions() {
 }
 
 /**
- * Utility function to check if code module is registered and working
- * Can be called from the console for debugging
+ * Utility function to debug the code module.
+ * Can be called from the console for debugging.
  */
 window.debugCodeModule = function() {
     console.log("=== CODE MODULE DEBUG ===");
@@ -287,7 +286,6 @@ window.debugCodeModule = function() {
     console.log("Code module language:", codeModule.language);
     console.log("Code module isActive:", codeModule.isActive);
     
-    // Test basic methods
     console.log("Testing code module methods:");
     if (typeof codeModule.displayCode === 'function') {
         console.log("displayCode() method exists");

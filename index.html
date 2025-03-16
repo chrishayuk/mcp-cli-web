@@ -1,281 +1,275 @@
-<!-- index.html (updated) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Terminal Chat Canvas</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="styles/main.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Terminal Chat Canvas</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+  <link rel="stylesheet" href="styles/main.css" />
 
-    <!-- chat styles -->
-    <link rel="stylesheet" href="styles/chat.css">
-    <link rel="stylesheet" href="styles/chat-code.css">
-    <link rel="stylesheet" href="styles/chat-image.css">
+  <!-- chat styles -->
+  <link rel="stylesheet" href="styles/chat.css" />
+  <link rel="stylesheet" href="styles/chat-code.css" />
+  <link rel="stylesheet" href="styles/chat-image.css" />
 
-    <!-- module styles -->
-    <link rel="stylesheet" href="styles/code.css">
-    <link rel="stylesheet" href="styles/image-viewer.css">
-    <link rel="stylesheet" href="styles/slash-command.css">
+  <!-- module styles -->
+  <link rel="stylesheet" href="styles/code.css" />
+  <link rel="stylesheet" href="styles/image-viewer.css" />
+  <link rel="stylesheet" href="styles/slash-command.css" />
 
-    <!-- collapsible canvas styles -->
-    <link rel="stylesheet" href="styles/collapsible-canvas.css">
+  <!-- collapsible canvas styles -->
+  <link rel="stylesheet" href="styles/collapsible-canvas.css" />
 </head>
 <body>
-    <!-- Terminal effects -->
-    <div class="terminal-scanlines"></div>
-    <div class="terminal-glow"></div>
-    
-    <div class="main-container">
-        <!-- Chat Terminal side -->
-        <div class="terminal-window">
-            <div class="terminal-titlebar">
-                <div class="terminal-title">
-                    <i class="fas fa-terminal"></i>
-                    <span>canvas-assistant</span>
-                </div>
-                <div class="terminal-controls">
-                    <div class="terminal-dot"></div>
-                    <div class="terminal-dot"></div>
-                    <div class="terminal-dot"></div>
-                </div>
+  <!-- Terminal effects -->
+  <div class="terminal-scanlines"></div>
+  <div class="terminal-glow"></div>
+
+  <div class="main-container">
+    <!-- Chat Terminal side -->
+    <div class="terminal-window">
+      <div class="terminal-titlebar">
+        <div class="terminal-title">
+          <i class="fas fa-terminal"></i>
+          <span>canvas-assistant</span>
+        </div>
+        <div class="terminal-controls">
+          <div class="terminal-dot"></div>
+          <div class="terminal-dot"></div>
+          <div class="terminal-dot"></div>
+        </div>
+      </div>
+
+      <div class="terminal-body">
+        <!-- Hidden terminal content for compatibility -->
+        <div id="terminal-content" style="display: none;"></div>
+
+        <!-- Hidden form elements needed by original scripts -->
+        <div style="display: none;">
+          <input type="text" id="commandInput" />
+          <button id="helpButton"></button>
+          <input type="text" id="urlInput" />
+          <div id="responseContainer"></div>
+          <button id="fetchButton"></button>
+          <button id="drawButton"></button>
+          <button id="clearButton"></button>
+        </div>
+
+        <div class="terminal-chat">
+          <div class="chat-messages" id="chat-messages">
+            <!-- System welcome message -->
+            <div class="chat-message system-message">
+              <div class="message-avatar system-avatar">
+                <i class="fas fa-desktop"></i>
+              </div>
+              <div class="message-content system-content">
+                <div class="message-text">Welcome to Canvas Terminal! I can help you visualize data and images.</div>
+                <div class="message-time">Just now</div>
+              </div>
             </div>
-            
-            <div class="terminal-body">
-                <!-- Hidden terminal content for compatibility -->
-                <div id="terminal-content" style="display: none;"></div>
-                
-                <!-- Hidden form elements needed by original scripts -->
-                <div style="display: none;">
-                    <input type="text" id="commandInput">
-                    <button id="helpButton"></button>
-                    <input type="text" id="urlInput">
-                    <div id="responseContainer"></div>
-                    <button id="fetchButton"></button>
-                    <button id="drawButton"></button>
-                    <button id="clearButton"></button>
-                </div>
-                
-                <div class="terminal-chat">
-                    <div class="chat-messages" id="chat-messages">
-                        <!-- System welcome message -->
-                        <div class="chat-message system-message">
-                            <div class="message-avatar system-avatar">
-                                <i class="fas fa-desktop"></i>
-                            </div>
-                            <div class="message-content system-content">
-                                <div class="message-text">Welcome to Canvas Terminal! I can help you visualize data and images.</div>
-                                <div class="message-time">Just now</div>
-                            </div>
-                        </div>
-                        
-                        <!-- System help message -->
-                        <div class="chat-message system-message">
-                            <div class="message-avatar system-avatar">
-                                <i class="fas fa-desktop"></i>
-                            </div>
-                            <div class="message-content system-content">
-                                <div class="message-text">I can:
-- Show images with "show image [url]"
-- Create charts with "chart [type]"
-- Display code with syntax highlighting
-- Draw patterns and shapes
-- Connect to terminals
 
-Try one of the suggestions below or type your own command!</div>
-                                <div class="message-time">Just now</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Command suggestions -->
-                    <div class="command-suggestions" id="command-suggestions">
-                        <span class="command-suggestion">show random image</span>
-                        <span class="command-suggestion">chart pie</span>
-                        <span class="command-suggestion">draw pattern</span>
-                        <span class="command-suggestion">display code</span>
-                        <span class="command-suggestion">connect terminal</span>
-                        <span class="command-suggestion">help</span>
-                    </div>
-                    
-                    <!-- Chat input -->
-                    <div class="chat-input-container">
-                        <textarea class="chat-input" id="chat-input" placeholder="Type a command or message..." rows="1"></textarea>
-                        <button class="chat-send" id="chat-send">
-                            <i class="fas fa-paper-plane"></i>
-                        </button>
-                    </div>
+            <!-- System help message -->
+            <div class="chat-message system-message">
+              <div class="message-avatar system-avatar">
+                <i class="fas fa-desktop"></i>
+              </div>
+              <div class="message-content system-content">
+                <div class="message-text">
+                  I can:
+                  <br />- Show images with "show image [url]"
+                  <br />- Create charts with "chart [type]"
+                  <br />- Display code with syntax highlighting
+                  <br />- Draw patterns and shapes
+                  <br />- Connect to terminals
+                  <br /><br />Try one of the suggestions below or type your own command!
                 </div>
+                <div class="message-time">Just now</div>
+              </div>
             </div>
+          </div>
+
+          <!-- Command suggestions -->
+          <div class="command-suggestions" id="command-suggestions">
+            <span class="command-suggestion">show random image</span>
+            <span class="command-suggestion">chart pie</span>
+            <span class="command-suggestion">draw pattern</span>
+            <span class="command-suggestion">display code</span>
+            <span class="command-suggestion">connect terminal</span>
+            <span class="command-suggestion">help</span>
+          </div>
+
+          <!-- Chat input -->
+          <div class="chat-input-container">
+            <textarea class="chat-input" id="chat-input" placeholder="Type a command or message..." rows="1"></textarea>
+            <button class="chat-send" id="chat-send">
+              <i class="fas fa-paper-plane"></i>
+            </button>
+          </div>
         </div>
-        
-        <!-- Canvas side -->
-        <div class="canvas-window">
-            <!-- This structure will be modified by the collapsible canvas manager -->
-            <div class="canvas-titlebar">
-                <div class="canvas-title">
-                    <i class="fas fa-desktop"></i>
-                    <span>Canvas Display</span>
-                </div>
-                <div id="canvasStatus" class="status success">
-                    <i class="fas fa-check-circle"></i>
-                    <span>Ready</span>
-                </div>
-            </div>
-            <div class="canvas-container">
-                <canvas id="canvas" width="800" height="600"></canvas>
-                
-                <!-- Instructions overlay -->
-                <div class="instructions-overlay" id="canvasInstructions">
-                    <i class="fas fa-photo-video"></i>
-                    <p>Ask the assistant to show an image or create a chart</p>
-                    <p>Try "show random image" or "chart pie"</p>
-                </div>
-                
-                <!-- Canvas controls -->
-                <div class="canvas-controls">
-                    <button id="zoomInButton" class="terminal-button">
-                        <i class="fas fa-search-plus"></i>
-                    </button>
-                    <button id="zoomOutButton" class="terminal-button">
-                        <i class="fas fa-search-minus"></i>
-                    </button>
-                    <button id="resetViewButton" class="terminal-button">
-                        <i class="fas fa-compress-arrows-alt"></i>
-                    </button>
-                </div>
-            </div>
-        </div>
+      </div>
     </div>
-    
-    <div class="status-bar">
-        <div class="status-item">
-            <i class="fas fa-circle"></i>
-            <span>Terminal v0.1</span>
+
+    <!-- Canvas side -->
+    <div class="canvas-window">
+      <!-- This structure will be modified by the collapsible canvas manager -->
+      <div class="canvas-titlebar">
+        <div class="canvas-title">
+          <i class="fas fa-desktop"></i>
+          <span>Canvas Display</span>
         </div>
-        <div class="status-item">
-            <i class="fas fa-memory"></i>
-            <span>Memory: <span id="memoryUsage">0</span> KB</span>
+        <div id="canvasStatus" class="status success">
+          <i class="fas fa-check-circle"></i>
+          <span>Ready</span>
         </div>
-        <div class="status-item">
-            <i class="fas fa-clock"></i>
-            <span id="currentTime">00:00:00</span>
+      </div>
+      <div class="canvas-container">
+        <canvas id="canvas" width="800" height="600"></canvas>
+
+        <!-- Instructions overlay -->
+        <div class="instructions-overlay" id="canvasInstructions">
+          <i class="fas fa-photo-video"></i>
+          <p>Ask the assistant to show an image or create a chart</p>
+          <p>Try "show random image" or "chart pie"</p>
         </div>
+
+        <!-- Canvas controls -->
+        <div class="canvas-controls">
+          <button id="zoomInButton" class="terminal-button">
+            <i class="fas fa-search-plus"></i>
+          </button>
+          <button id="zoomOutButton" class="terminal-button">
+            <i class="fas fa-search-minus"></i>
+          </button>
+          <button id="resetViewButton" class="terminal-button">
+            <i class="fas fa-compress-arrows-alt"></i>
+          </button>
+        </div>
+      </div>
     </div>
-    
-    <!-- Canvas tab context menu -->
-    <div id="canvasTabContextMenu" class="context-menu" style="display: none;">
-        <div class="context-menu-item" data-action="new">New Canvas</div>
-        <div class="context-menu-item" data-action="rename">Rename Canvas</div>
-        <div class="context-menu-item" data-action="minimize">Minimize Canvas</div>
-        <div class="context-menu-item" data-action="close">Close Canvas</div>
-        <div class="context-menu-separator"></div>
-        <div class="context-menu-item" data-action="closeOthers">Close Other Canvases</div>
-        <div class="context-menu-item" data-action="closeAll">Close All Canvases</div>
+  </div>
+
+  <div class="status-bar">
+    <div class="status-item">
+      <i class="fas fa-circle"></i>
+      <span>Terminal v0.1</span>
     </div>
-    
-    <!-- Keyboard shortcut hints -->
-    <div class="keyboard-shortcut-hints">
-        <div class="keyboard-shortcut-hint"><kbd>Ctrl</kbd> + <kbd>T</kbd> New canvas</div>
-        <div class="keyboard-shortcut-hint"><kbd>Ctrl</kbd> + <kbd>W</kbd> Close canvas</div>
-        <div class="keyboard-shortcut-hint"><kbd>Ctrl</kbd> + <kbd>Tab</kbd> Switch canvas</div>
-        <div class="keyboard-shortcut-hint"><kbd>Double-click</kbd> Minimize canvas</div>
+    <div class="status-item">
+      <i class="fas fa-memory"></i>
+      <span>Memory: <span id="memoryUsage">0</span> KB</span>
     </div>
-    
-    <!-- Canvas modules -->
-    <script src="js/canvas/modules/canvas-module.js"></script>
-    <script src="js/canvas/modules/html-module.js"></script>
+    <div class="status-item">
+      <i class="fas fa-clock"></i>
+      <span id="currentTime">00:00:00</span>
+    </div>
+  </div>
 
-    <!-- Canvas Manager -->
-    <script src="js/canvas/canvas-manager.js"></script>
+  <!-- Canvas tab context menu -->
+  <div id="canvasTabContextMenu" class="context-menu" style="display: none;">
+    <div class="context-menu-item" data-action="new">New Canvas</div>
+    <div class="context-menu-item" data-action="rename">Rename Canvas</div>
+    <div class="context-menu-item" data-action="minimize">Minimize Canvas</div>
+    <div class="context-menu-item" data-action="close">Close Canvas</div>
+    <div class="context-menu-separator"></div>
+    <div class="context-menu-item" data-action="closeOthers">Close Other Canvases</div>
+    <div class="context-menu-item" data-action="closeAll">Close All Canvases</div>
+  </div>
 
-    <!-- Collapsible Canvas Components (loaded in dependency order) -->
-    <script src="js/canvas/collapsible-canvas/canvas-dom-manager.js"></script>
-    <script src="js/canvas/collapsible-canvas/canvas-layout-manager.js"></script>
-    <script src="js/canvas/collapsible-canvas/canvas-tab-manager.js"></script>
-    <script src="js/canvas/collapsible-canvas/canvas-setup-manager.js"></script>
+  <!-- Keyboard shortcut hints -->
+  <div class="keyboard-shortcut-hints">
+    <div class="keyboard-shortcut-hint"><kbd>Ctrl</kbd> + <kbd>T</kbd> New canvas</div>
+    <div class="keyboard-shortcut-hint"><kbd>Ctrl</kbd> + <kbd>W</kbd> Close canvas</div>
+    <div class="keyboard-shortcut-hint"><kbd>Ctrl</kbd> + <kbd>Tab</kbd> Switch canvas</div>
+    <div class="keyboard-shortcut-hint"><kbd>Double-click</kbd> Minimize canvas</div>
+  </div>
 
-    <!-- Core manager last -->
-    <script src="js/canvas/collapsible-canvas/collapsible-canvas-manager.js"></script>
+  <!-- Canvas modules -->
+  <script src="js/canvas/modules/canvas-module.js"></script>
+  <script src="js/canvas/modules/html-module.js"></script>
 
-    <!-- Slash Command -->
-    <script src="js/canvas/slash-commands/slash-command-debug.js"></script>
-    <script src="js/canvas/slash-commands/slash-command-module-activation.js"></script>
-    <script src="js/canvas/slash-commands/slash-command-handler.js"></script>
-    
-    <!-- Then load visualization modules -->
-    <script src="js/canvas/modules/shape-module.js"></script>
-    <script src="js/canvas/modules/chart-module.js"></script>
+  <!-- Canvas Manager -->
+  <script src="js/canvas/canvas-manager.js"></script>
 
-    <!-- Define updateImageModule before loading the image-module-slash-command-handler.js -->
-    <script>
-        // Define updateImageModule function
-        function updateImageModule(settings) {
-            // Get image module
-            const imageModule = window.Commands && window.Commands.canvasManager
-                ? window.Commands.canvasManager.getModule('image')
-                : null;
-            
-            if (!imageModule) {
-                console.error("Image module not found");
-                return;
-            }
-            
-            // Apply settings to image module
-            if (settings && settings.theme && typeof imageModule.setTheme === 'function') {
-                imageModule.setTheme(settings.theme);
-            }
-            
-            if (settings && settings.zoom && typeof imageModule.setZoom === 'function') {
-                imageModule.setZoom(settings.zoom);
-            }
-            
-            // Refresh the display if needed
-            if (typeof imageModule.refresh === 'function') {
-                imageModule.refresh();
-            }
-            
-            console.log("Image module updated with settings:", settings);
-        }
+  <!-- Collapsible Canvas Components (dependency order) -->
+  <script src="js/canvas/collapsible-canvas/canvas-dom-manager.js"></script>
+  <script src="js/canvas/collapsible-canvas/canvas-layout-manager.js"></script>
+  <script src="js/canvas/collapsible-canvas/canvas-tab-manager.js"></script>
+  <script src="js/canvas/collapsible-canvas/canvas-setup-manager.js"></script>
+  <script src="js/canvas/collapsible-canvas/collapsible-canvas-manager.js"></script>
+  
+  <!-- Tab Activation Handler should be moved here -->
+   <script src="js/canvas/collapsible-canvas/canvas-tab-activation-handler.js"></script>
 
-        // Make it globally available
-        window.updateImageModule = updateImageModule;
-    </script>
 
-    <!-- Image Module -->
-    <script src="js/canvas/modules/image-module/image-module-slash-command-handler.js"></script>
-    <script src="js/canvas/modules/image-module/image-module-commands.js"></script>
-    <script src="js/canvas/modules/image-module/html-image-module.js"></script>
+  <!-- Slash Command -->
+  <script src="js/canvas/slash-commands/slash-command-debug.js"></script>
+  <script src="js/canvas/slash-commands/slash-command-module-activation.js"></script>
+  <script src="js/canvas/slash-commands/slash-command-handler.js"></script>
 
-    <!-- Code Module -->
-    <script src="js/canvas/modules/code-module/code-module-slash-command-handler.js"></script>
-    <script src="js/canvas/modules/code-module/code-module-commands.js"></script>
-    <script src="js/canvas/modules/code-module/code-html-module.js"></script>
+  <!-- Visualization Modules -->
+  <script src="js/canvas/modules/shape-module.js"></script>
+  <script src="js/canvas/modules/chart-module.js"></script>
 
-    <!-- Markdown Module -->
-    <script src="js/canvas/modules/markdown-module.js"></script>
+  <!-- Define updateImageModule before loading image module slash commands -->
+  <script>
+    function updateImageModule(settings) {
+      const imageModule = window.Commands && window.Commands.canvasManager
+        ? window.Commands.canvasManager.getModule('image')
+        : null;
+      if (!imageModule) {
+        console.error("Image module not found");
+        return;
+      }
+      if (settings && settings.theme && typeof imageModule.setTheme === 'function') {
+        imageModule.setTheme(settings.theme);
+      }
+      if (settings && settings.zoom && typeof imageModule.setZoom === 'function') {
+        imageModule.setZoom(settings.zoom);
+      }
+      if (typeof imageModule.refresh === 'function') {
+        imageModule.refresh();
+      }
+      console.log("Image module updated with settings:", settings);
+    }
+    window.updateImageModule = updateImageModule;
+  </script>
 
-    <!-- Streaming Terminal module components -->
-    <script src="js/canvas/modules/wasm-bridge.js"></script>
-    <script src="js/canvas/modules/streaming-terminal-module/websocket-handler.js"></script>
-    <script src="js/canvas/modules/streaming-terminal-module/slash-command-handler.js"></script>
-    <script src="js/canvas/modules/streaming-terminal-module/streaming-terminal-module.js"></script>
+  <!-- Image Module -->
+  <script src="js/canvas/modules/image-module/image-module-slash-command-handler.js"></script>
+  <script src="js/canvas/modules/image-module/image-module-commands.js"></script>
+  <script src="js/canvas/modules/image-module/html-image-module.js"></script>
 
-    <!-- Terminal and core scripts -->
-    <script src="js/terminal.js"></script>
-    <script src="js/commands.js"></script>
-    
-    <!-- Chat interface script -->
-    <script src="js/chat/chat-interface.js"></script>
-    <script src="js/chat/chat-code-handler.js"></script>
-    <script src="js/chat/chat-code-tester.js"></script>
-    <script src="js/chat/chat-image-handler.js"></script>
-    <script src="js/chat/chat-image-tester.js"></script>
+  <!-- Code Module -->
+  <script src="js/canvas/modules/code-module/code-module-slash-command-handler.js"></script>
+  <script src="js/canvas/modules/code-module/code-module-commands.js"></script>
+  <script src="js/canvas/modules/code-module/code-html-module.js"></script>
 
-    <!-- Main initialization last -->
-    <script src="js/main.js"></script>
-    
-    <!-- Terminal initialization script -->
-    <script src="js/terminal-initialization.js"></script>
+  <!-- Markdown Module -->
+  <script src="js/canvas/modules/markdown-module.js"></script>
+
+  <!-- Streaming Terminal Module Components -->
+  <script src="js/canvas/modules/wasm-bridge.js"></script>
+  <script src="js/canvas/modules/streaming-terminal-module/websocket-handler.js"></script>
+  <script src="js/canvas/modules/streaming-terminal-module/slash-command-handler.js"></script>
+  <script src="js/canvas/modules/streaming-terminal-module/streaming-terminal-module.js"></script>
+
+  <!-- Terminal and Core Scripts -->
+  <script src="js/terminal.js"></script>
+  <script src="js/commands.js"></script>
+
+  <!-- Chat Interface and Handlers -->
+  <script src="js/chat/chat-interface.js"></script>
+  <script src="js/chat/chat-code-handler.js"></script>
+  <script src="js/chat/chat-code-tester.js"></script>
+  <script src="js/chat/chat-image-handler.js"></script>
+  <script src="js/chat/chat-image-tester.js"></script>
+
+  <!-- Main Initialization -->
+  <script src="js/main.js"></script>
+  
+  <!-- Terminal Initialization -->
+  <script src="js/terminal-initialization.js"></script>
+
+  <!-- Content Tab Manager -->
+  <script src="js/canvas/content-tab-manager.js"></script>
 </body>
 </html>
