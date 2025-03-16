@@ -103,6 +103,10 @@ class StreamingTerminalModule extends CanvasModule {
   activate() {
     super.activate();
     this.manager?.updateCanvasStatus('success', 'Terminal Active');
+    
+    // Update canvas title to "Terminal Display"
+    this.updateCanvasTitle('Terminal Display');
+    
     this.enableDirectInput();
     return this;
   }
@@ -111,8 +115,24 @@ class StreamingTerminalModule extends CanvasModule {
     if (this.wsHandler?.isConnected()) {
       this.wsHandler.disconnect();
     }
+    
+    // Restore canvas title to "Canvas Display"
+    this.updateCanvasTitle('Canvas Display');
+    
     this.disableDirectInput();
     return super.deactivate();
+  }
+  
+  // Update the canvas title in the UI
+  updateCanvasTitle(title) {
+    try {
+      const canvasTitleElement = document.querySelector('.canvas-title span');
+      if (canvasTitleElement) {
+        canvasTitleElement.textContent = title;
+      }
+    } catch (error) {
+      console.error('Error updating canvas title:', error);
+    }
   }
   
   enableDirectInput() {
@@ -580,9 +600,7 @@ class StreamingTerminalModule extends CanvasModule {
   }
   
   connect(endpoint) {
-    // Add message to output - natural terminal style
-    this.terminalOutput.push(`Connecting to ${endpoint}...`);
-    this.render();
+    // No need to add a message here - WebSocketHandler will show connecting status
     
     // Use the WebSocket handler to establish the connection
     this.wsHandler.connect(endpoint)
@@ -617,6 +635,7 @@ class StreamingTerminalModule extends CanvasModule {
   
   updateStatus(status, message) {
     if (this.statusIndicator) {
+      // Update internal status indicator
       this.statusIndicator.textContent = message || status;
       switch (status) {
         case 'connected': this.statusIndicator.style.color = '#00ff00'; break;
@@ -625,6 +644,60 @@ class StreamingTerminalModule extends CanvasModule {
         case 'error': this.statusIndicator.style.color = '#ff5500'; break;
         default: this.statusIndicator.style.color = '#ffffff';
       }
+    }
+    
+    // Also update the global status bar with server information
+    this.updateGlobalStatus(status, message);
+  }
+  
+  // Add a method to update the global status bar
+  updateGlobalStatus(status, message) {
+    try {
+      // Find the status bar connected indicator
+      const statusBarConnected = document.querySelector('.status-bar .status-item:last-child span');
+      if (statusBarConnected) {
+        if (status === 'connected' && this.wsHandler && this.wsHandler.endpoint) {
+          // Show endpoint in status bar when connected
+          statusBarConnected.textContent = `Connected to ${this.wsHandler.endpoint}`;
+        } else if (status === 'disconnected') {
+          statusBarConnected.textContent = 'Disconnected';
+        } else if (status === 'connecting') {
+          statusBarConnected.textContent = 'Connecting...';
+        } else if (status === 'error') {
+          statusBarConnected.textContent = message || 'Connection Error';
+        } else {
+          statusBarConnected.textContent = message || status;
+        }
+      }
+      
+      // Also update the main canvas status indicator
+      const canvasStatus = document.getElementById('canvasStatus');
+      if (canvasStatus) {
+        const statusSpan = canvasStatus.querySelector('span');
+        const statusIcon = canvasStatus.querySelector('i');
+        
+        if (statusSpan && statusIcon) {
+          if (status === 'connected') {
+            statusSpan.textContent = `Connected to ${this.wsHandler.endpoint}`;
+            canvasStatus.className = 'status success';
+            statusIcon.className = 'fas fa-check-circle';
+          } else if (status === 'disconnected') {
+            statusSpan.textContent = 'Disconnected';
+            canvasStatus.className = 'status info';
+            statusIcon.className = 'fas fa-info-circle';
+          } else if (status === 'connecting') {
+            statusSpan.textContent = 'Connecting...';
+            canvasStatus.className = 'status warning';
+            statusIcon.className = 'fas fa-sync fa-spin';
+          } else if (status === 'error') {
+            statusSpan.textContent = message || 'Connection Error';
+            canvasStatus.className = 'status error';
+            statusIcon.className = 'fas fa-exclamation-circle';
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error updating global status:', error);
     }
   }
   
