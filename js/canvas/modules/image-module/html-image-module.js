@@ -14,6 +14,8 @@ class HtmlImageModule extends HtmlModule {
         
         // Set default title for this module using the new tab manager API
         this.setModuleTitle('Image Viewer');
+        // Explicitly set module name for reference in the manager and command handlers
+        this.moduleName = 'image';
     }
     
     /**
@@ -31,12 +33,9 @@ class HtmlImageModule extends HtmlModule {
      */
     setModuleTitle(title) {
         this._moduleTitle = title;
-        
-        // If active and a tab manager exists, update only the active tab’s title.
         if (this.isActive && this.manager && this.manager.tabManager) {
             this.manager.tabManager.updateTabTitle(this.manager.activeCanvasId, title);
         }
-        
         return this;
     }
     
@@ -45,8 +44,8 @@ class HtmlImageModule extends HtmlModule {
      * Creates or uses existing HTML container for image display.
      */
     init(element, ctx, manager) {
+        // If a canvas element is passed in, create a new container; otherwise use the provided element.
         if (element.tagName.toLowerCase() === 'canvas') {
-            // Create a container for our HTML if we're given a canvas
             const container = document.createElement('div');
             container.id = 'imageContainer_' + Date.now();
             container.className = 'image-viewer-container';
@@ -54,7 +53,6 @@ class HtmlImageModule extends HtmlModule {
             element.parentNode.insertBefore(container, element.nextSibling);
             this.container = container;
         } else {
-            // Use the provided container directly
             this.container = element;
             this.container.classList.add('image-viewer-container');
         }
@@ -64,9 +62,7 @@ class HtmlImageModule extends HtmlModule {
             this.container.innerHTML = '';
         }
         
-        // Log initialization
         console.log("HTML Image Module initialized");
-        
         return this;
     }
     
@@ -77,37 +73,36 @@ class HtmlImageModule extends HtmlModule {
     activate() {
         super.activate();
         
-        // Expand the collapsible canvas section so this module is fully visible
+        // Expand the collapsible canvas section so this module is fully visible.
         if (this.manager && typeof this.manager.expandCanvasSection === 'function') {
             this.manager.expandCanvasSection();
         }
         
-        // Update canvas status and hide instructions
+        // Update canvas status and hide instructions.
         if (this.manager) {
             this.manager.updateCanvasStatus('success', 'Image Module Active');
             this.manager.hideInstructions();
             
-            // Use the new tab manager to update only the active tab's title
+            // Update the active tab's title via the tab manager.
             if (this.manager.tabManager) {
                 this.manager.tabManager.updateTabTitle(this.manager.activeCanvasId, this.getModuleTitle());
             } else if (typeof this.manager.updateCanvasTitle === 'function') {
-                // Fallback if tabManager isn't available
                 this.manager.updateCanvasTitle(this.getModuleTitle());
             }
         }
         
-        // Hide the base <canvas> element (if any)
-        const canvas = document.getElementById('canvas');
-        if (canvas) {
-            canvas.style.display = 'none';
+        // Hide the base <canvas> element if present.
+        const baseCanvas = document.getElementById('canvas');
+        if (baseCanvas) {
+            baseCanvas.style.display = 'none';
         }
         
-        // Show this module's container
+        // Show this module's container.
         if (this.container) {
             this.container.style.display = 'flex';
         }
         
-        // Create base UI if not already created
+        // Create the UI if not already created.
         if (!this.container.querySelector('.image-viewer-ui')) {
             this.createImageViewerUI();
         }
@@ -118,16 +113,13 @@ class HtmlImageModule extends HtmlModule {
     
     /**
      * Deactivate the module.
-     * Hides image container.
+     * Hides the image container.
      */
     deactivate() {
         super.deactivate();
-        
-        // Hide this module's container
         if (this.container) {
             this.container.style.display = 'none';
         }
-        
         return this;
     }
     
@@ -135,28 +127,28 @@ class HtmlImageModule extends HtmlModule {
      * Create the base image viewer UI.
      */
     createImageViewerUI() {
-        // Clear container
+        // Clear the container.
         this.container.innerHTML = '';
         
-        // Create UI container with a terminal-like aesthetic
+        // Create UI container with a terminal-like aesthetic.
         const ui = document.createElement('div');
         ui.className = 'image-viewer-ui';
         
-        // Header with info and controls
+        // Header with info and controls.
         const header = document.createElement('div');
         header.className = 'image-viewer-header';
         
-        // Left side info
+        // Left side: image information.
         const imageInfo = document.createElement('div');
         imageInfo.className = 'image-info';
         imageInfo.innerHTML = '<span class="image-title">No image loaded</span>';
         header.appendChild(imageInfo);
         
-        // Right side controls
+        // Right side: controls.
         const controls = document.createElement('div');
         controls.className = 'image-controls';
         
-        // Zoom controls
+        // Zoom controls.
         const zoomControls = document.createElement('div');
         zoomControls.className = 'zoom-controls';
         
@@ -183,7 +175,7 @@ class HtmlImageModule extends HtmlModule {
         zoomControls.appendChild(zoomIn);
         controls.appendChild(zoomControls);
         
-        // Additional controls like theme, save, etc.
+        // Additional controls (theme, save, open in new tab).
         const additionalControls = document.createElement('div');
         additionalControls.className = 'additional-controls';
         
@@ -213,34 +205,32 @@ class HtmlImageModule extends HtmlModule {
         header.appendChild(controls);
         ui.appendChild(header);
         
-        // Main image viewing area
+        // Main image viewing area.
         const viewingArea = document.createElement('div');
         viewingArea.className = 'image-viewing-area';
         
-        // Image placeholder or initial state
+        // Placeholder: shown when no image is loaded.
         const placeholderContainer = document.createElement('div');
         placeholderContainer.className = 'image-placeholder';
         placeholderContainer.innerHTML = '<i class="fas fa-image"></i><p>No image loaded</p><p>Use "show image [url]" to display an image</p>';
         viewingArea.appendChild(placeholderContainer);
         
-        // Image container (will be populated when an image loads)
+        // Image container: will display the loaded image.
         const imageContainer = document.createElement('div');
         imageContainer.className = 'main-image-container';
         viewingArea.appendChild(imageContainer);
         
         ui.appendChild(viewingArea);
         
-        // Footer with image metadata/information
+        // Footer: displays URL and metadata.
         const footer = document.createElement('div');
         footer.className = 'image-viewer-footer';
         
-        // Image URL display
         const urlDisplay = document.createElement('div');
         urlDisplay.className = 'image-url';
         urlDisplay.textContent = 'No image loaded';
         footer.appendChild(urlDisplay);
         
-        // Image metadata
         const metadata = document.createElement('div');
         metadata.className = 'image-metadata';
         metadata.innerHTML = '<span class="dimensions">-</span> | <span class="file-size">-</span>';
@@ -248,12 +238,12 @@ class HtmlImageModule extends HtmlModule {
         
         ui.appendChild(footer);
         
-        // Add terminal-style overlays
+        // Optional: add terminal-style overlays (e.g., scanlines).
         const scanlines = document.createElement('div');
         scanlines.className = 'viewer-scanlines';
         ui.appendChild(scanlines);
         
-        // Add the UI to the container
+        // Append the complete UI to the container.
         this.container.appendChild(ui);
     }
     
@@ -267,25 +257,20 @@ class HtmlImageModule extends HtmlModule {
                     return this.displayImage(args[0]);
                 }
                 return false;
-                
             case 'random':
                 return this.displayRandomImage();
-                
             case 'zoom':
                 if (args && args.length > 0) {
                     return this.zoomImage(args[0]);
                 }
                 return false;
-                
             case 'info':
                 return this.showImageInfo();
-                
             case 'theme':
                 if (args && args.length > 0) {
                     return this.setTheme(args[0]);
                 }
                 return false;
-                
             default:
                 console.error(`Unknown command for HtmlImageModule: ${command}`);
                 return false;
@@ -523,7 +508,6 @@ class HtmlImageModule extends HtmlModule {
      */
     showErrorState(message) {
         const placeholderContainer = this.container.querySelector('.image-placeholder');
-        
         if (placeholderContainer) {
             placeholderContainer.style.display = 'flex';
             placeholderContainer.innerHTML = `<i class="fas fa-exclamation-triangle"></i><p>${message}</p>`;

@@ -33,11 +33,20 @@ function extendCommandProcessor() {
     window.Commands.processCommand = function(cmd) {
         const lowerCmd = cmd.toLowerCase().trim();
         
-        // Handle code module specific commands
+        // Helper: expand + activate code
+        function expandAndActivateCode() {
+            const cm = window.Commands.canvasManager;
+            // Explicitly expand the canvas (remove if you prefer manual control)
+            cm.expandCanvasSection();
+            // Now activate the code module
+            cm.activateModule('code');
+            return cm.getModule('code');
+        }
+        
+        // 1. "display code" or "code" command
         if (lowerCmd.startsWith('display code') || lowerCmd === 'display code' || lowerCmd === 'code' || lowerCmd.startsWith('code ')) {
             try {
-                const cm = window.Commands.canvasManager;
-                cm.activateModule('code');
+                const codeModule = expandAndActivateCode();
                 
                 // Extract code after the command if present
                 let code = '';
@@ -48,12 +57,16 @@ function extendCommandProcessor() {
                 
                 // If no code was provided, use a default sample
                 if (!code) {
-                    code = '// Sample code\nfunction helloWorld() {\n  console.log("Hello, Terminal Canvas!");\n  return "Code execution complete";\n}\n\nhelloWorld();';
+                    code = `// Sample code
+function helloWorld() {
+  console.log("Hello, Terminal Canvas!");
+  return "Code execution complete";
+}
+
+helloWorld();`;
                 }
                 
-                // Extract language if specified with a special marker
-                // Format: display code language:python
-                // Then the code content follows
+                // Extract language if specified (format: "display code language:python\nrest of code")
                 let language = 'javascript'; // Default
                 if (code.startsWith('language:')) {
                     const firstLineBreak = code.indexOf('\n');
@@ -63,8 +76,8 @@ function extendCommandProcessor() {
                     }
                 }
                 
-                // Display the code with specified or default language
-                cm.getModule('code').handleCommand('display', [code, language]);
+                // Display the code with the chosen language
+                codeModule.handleCommand('display', [code, language]);
                 return true;
             } catch (e) {
                 console.error('Error handling code command:', e);
@@ -73,20 +86,22 @@ function extendCommandProcessor() {
                 }
                 return false;
             }
-        } else if (lowerCmd.startsWith('run code') || lowerCmd === 'run code') {
+        }
+        
+        // 2. "run code" command
+        else if (lowerCmd.startsWith('run code') || lowerCmd === 'run code') {
             try {
                 const cm = window.Commands.canvasManager;
                 const codeModule = cm.getModule('code');
                 
-                if (codeModule && codeModule.isActive) {
-                    codeModule.handleCommand('run');
-                    return true;
-                } else {
-                    // Activate code module first if not active
+                // Expand & activate if needed
+                if (!codeModule || !codeModule.isActive) {
+                    cm.expandCanvasSection();
                     cm.activateModule('code');
-                    codeModule.handleCommand('run');
-                    return true;
                 }
+                
+                codeModule.handleCommand('run');
+                return true;
             } catch (e) {
                 console.error('Error running code:', e);
                 if (typeof terminal !== 'undefined') {
@@ -94,9 +109,16 @@ function extendCommandProcessor() {
                 }
                 return false;
             }
-        } else if (lowerCmd.startsWith('code theme') || lowerCmd.startsWith('set code theme')) {
+        }
+        
+        // 3. "code theme" or "set code theme"
+        else if (lowerCmd.startsWith('code theme') || lowerCmd.startsWith('set code theme')) {
             try {
                 const cm = window.Commands.canvasManager;
+                // Expand + activate
+                cm.expandCanvasSection();
+                cm.activateModule('code');
+                
                 const codeModule = cm.getModule('code');
                 
                 // Extract theme name
@@ -107,77 +129,77 @@ function extendCommandProcessor() {
                     theme = 'dark';
                 }
                 
-                // Activate and set theme
-                cm.activateModule('code');
                 codeModule.handleCommand('theme', [theme]);
                 return true;
             } catch (e) {
                 console.error('Error setting code theme:', e);
                 return false;
             }
-        } else if (lowerCmd.includes('toggle line numbers') || lowerCmd.includes('line numbers')) {
+        }
+        
+        // 4. "toggle line numbers"
+        else if (lowerCmd.includes('toggle line numbers') || lowerCmd.includes('line numbers')) {
             try {
                 const cm = window.Commands.canvasManager;
+                // Expand + activate
+                cm.expandCanvasSection();
+                cm.activateModule('code');
+                
                 const codeModule = cm.getModule('code');
-                
-                // Activate if not active
-                if (!codeModule.isActive) {
-                    cm.activateModule('code');
-                }
-                
                 codeModule.handleCommand('toggleLineNumbers');
                 return true;
             } catch (e) {
                 console.error('Error toggling line numbers:', e);
                 return false;
             }
-        } else if (lowerCmd.includes('toggle editor') || lowerCmd === 'collapse editor' || lowerCmd === 'expand editor') {
+        }
+        
+        // 5. "toggle editor", "collapse editor", or "expand editor"
+        else if (lowerCmd.includes('toggle editor') || lowerCmd === 'collapse editor' || lowerCmd === 'expand editor') {
             try {
                 const cm = window.Commands.canvasManager;
+                cm.expandCanvasSection();
+                cm.activateModule('code');
+                
                 const codeModule = cm.getModule('code');
-                
-                // Activate if not active
-                if (!codeModule.isActive) {
-                    cm.activateModule('code');
-                }
-                
                 codeModule.handleCommand('toggleEditor');
                 return true;
             } catch (e) {
                 console.error('Error toggling editor panel:', e);
                 return false;
             }
-        } else if (lowerCmd.includes('toggle results') || lowerCmd === 'collapse results' || lowerCmd === 'expand results') {
+        }
+        
+        // 6. "toggle results", "collapse results", or "expand results"
+        else if (lowerCmd.includes('toggle results') || lowerCmd === 'collapse results' || lowerCmd === 'expand results') {
             try {
                 const cm = window.Commands.canvasManager;
+                cm.expandCanvasSection();
+                cm.activateModule('code');
+                
                 const codeModule = cm.getModule('code');
-                
-                // Activate if not active
-                if (!codeModule.isActive) {
-                    cm.activateModule('code');
-                }
-                
                 codeModule.handleCommand('toggleResults');
                 return true;
             } catch (e) {
                 console.error('Error toggling results panel:', e);
                 return false;
             }
-        } else if (lowerCmd.startsWith('set language') || lowerCmd.startsWith('code language')) {
+        }
+        
+        // 7. "set language" or "code language"
+        else if (lowerCmd.startsWith('set language') || lowerCmd.startsWith('code language')) {
             try {
                 const cm = window.Commands.canvasManager;
+                cm.expandCanvasSection();
+                cm.activateModule('code');
+                
                 const codeModule = cm.getModule('code');
                 
-                // Extract language
-                let language = 'javascript'; // Default
+                // Extract language from the command
+                let language = 'javascript'; // default
                 const parts = lowerCmd.split(' ');
                 if (parts.length > 2) {
                     language = parts[parts.length - 1].trim();
-                }
-                
-                // Activate if not active
-                if (!codeModule.isActive) {
-                    cm.activateModule('code');
                 }
                 
                 codeModule.handleCommand('language', [language]);
@@ -230,7 +252,6 @@ function addCodeCommandSuggestions() {
         runCodeSuggestion.innerHTML = '<i class="fas fa-play"></i> run code';
         suggestionsContainer.appendChild(runCodeSuggestion);
         
-        // Add click event listener
         runCodeSuggestion.addEventListener('click', () => {
             const chatInput = document.getElementById('chat-input');
             if (chatInput) {
