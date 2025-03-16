@@ -38,29 +38,66 @@ class StreamingTerminalModule extends CanvasModule {
   }
   
   /**
+   * Add to terminal output with deduplication for connection messages
+   * @param {string} message - Message to add to terminal output
+   */
+  addToTerminalOutput(message) {
+    // Check if this is a connection message
+    if (typeof message === 'string' && message.includes('Connected to')) {
+      // Remove any existing connection messages for the same endpoint
+      const endpoint = message.split('Connected to ')[1];
+      this.terminalOutput = this.terminalOutput.filter(line => 
+        !(line.includes('Connected to') && line.includes(endpoint))
+      );
+    }
+    
+    // Check if this is a "Request served by" message from the server
+    if (typeof message === 'string' && message.includes('Request served by')) {
+      // Extract the server ID
+      const parts = message.split('Request served by ');
+      if (parts.length > 1) {
+        const serverId = parts[1];
+        // Remove any existing "Request served by" messages with the same ID
+        this.terminalOutput = this.terminalOutput.filter(line => 
+          !(line.includes('Request served by') && line.includes(serverId))
+        );
+      }
+    }
+    
+    // Now add the message
+    this.terminalOutput.push(message);
+    
+    // Limit terminal history size to prevent memory issues
+    const MAX_TERMINAL_LINES = 1000;
+    if (this.terminalOutput.length > MAX_TERMINAL_LINES) {
+      this.terminalOutput = this.terminalOutput.slice(-MAX_TERMINAL_LINES);
+    }
+  }
+  
+  /**
    * Initialize the WebSocket and SlashCommand modules
    */
   initializeModules() {
     // Initialize WebSocket handler with callbacks
     this.wsHandler = new WebSocketHandler({
       onConnect: (endpoint) => {
-        this.terminalOutput.push(`Connected to ${endpoint}`);
+        // Don't add a connection message here - it comes through onMessage
         this.updateStatus('connected', 'Connected');
         this.manager?.updateCanvasStatus('success', 'Connected');
         this.render();
       },
       onDisconnect: () => {
-        this.terminalOutput.push('Disconnected from server');
+        this.addToTerminalOutput('Disconnected from server');
         this.updateStatus('disconnected', 'Disconnected');
         this.manager?.updateCanvasStatus('info', 'Disconnected');
         this.render();
       },
       onMessage: (data) => {
-        this.terminalOutput.push(`${data}`);
+        this.addToTerminalOutput(`${data}`);
         this.render();
       },
       onError: (error) => {
-        this.terminalOutput.push(`Error: ${error.message || 'Unknown error'}`);
+        this.addToTerminalOutput(`Error: ${error.message || 'Unknown error'}`);
         this.updateStatus('error', 'Error');
         this.manager?.updateCanvasStatus('error', 'Connection error');
         this.render();
@@ -370,7 +407,7 @@ class StreamingTerminalModule extends CanvasModule {
       
       if (command && command.trim()) {
         // Add command to output history
-        this.terminalOutput.push(`${command}`);
+        this.addToTerminalOutput(`${command}`);
         
         // Process the command
         this.processCommand(command);
@@ -526,20 +563,20 @@ class StreamingTerminalModule extends CanvasModule {
     
     switch (cmd) {
       case 'help':
-        this.terminalOutput.push("Available commands:");
-        this.terminalOutput.push("  help        - Show this help message");
-        this.terminalOutput.push("  clear       - Clear the terminal screen");
-        this.terminalOutput.push("  connect URL - Connect to WebSocket server");
-        this.terminalOutput.push("  disconnect  - Disconnect from server");
-        this.terminalOutput.push("  send <msg>  - Send a message to the server");
-        this.terminalOutput.push("");
-        this.terminalOutput.push("Special slash commands:");
-        this.terminalOutput.push("  /help       - Display this help message");
-        this.terminalOutput.push("  /clear      - Clear the terminal");
-        this.terminalOutput.push("  /connect URL - Connect to WebSocket server");
-        this.terminalOutput.push("  /disconnect - Disconnect from server");
-        this.terminalOutput.push("");
-        this.terminalOutput.push("When connected, you can type any text to send it directly to the server.");
+        this.addToTerminalOutput("Available commands:");
+        this.addToTerminalOutput("  help        - Show this help message");
+        this.addToTerminalOutput("  clear       - Clear the terminal screen");
+        this.addToTerminalOutput("  connect URL - Connect to WebSocket server");
+        this.addToTerminalOutput("  disconnect  - Disconnect from server");
+        this.addToTerminalOutput("  send <msg>  - Send a message to the server");
+        this.addToTerminalOutput("");
+        this.addToTerminalOutput("Special slash commands:");
+        this.addToTerminalOutput("  /help       - Display this help message");
+        this.addToTerminalOutput("  /clear      - Clear the terminal");
+        this.addToTerminalOutput("  /connect URL - Connect to WebSocket server");
+        this.addToTerminalOutput("  /disconnect - Disconnect from server");
+        this.addToTerminalOutput("");
+        this.addToTerminalOutput("When connected, you can type any text to send it directly to the server.");
         break;
         
       case 'clear':
@@ -550,8 +587,8 @@ class StreamingTerminalModule extends CanvasModule {
         if (args.length > 0) {
           this.connect(args[0]);
         } else {
-          this.terminalOutput.push("Error: Please specify a WebSocket URL");
-          this.terminalOutput.push("Example: connect wss://echo.websocket.org");
+          this.addToTerminalOutput("Error: Please specify a WebSocket URL");
+          this.addToTerminalOutput("Example: connect wss://echo.websocket.org");
         }
         break;
         
@@ -564,8 +601,8 @@ class StreamingTerminalModule extends CanvasModule {
           const message = args.join(' ');
           this.sendData(message);
         } else {
-          this.terminalOutput.push("Error: Please specify a message to send");
-          this.terminalOutput.push("Example: send Hello World");
+          this.addToTerminalOutput("Error: Please specify a message to send");
+          this.addToTerminalOutput("Example: send Hello World");
         }
         break;
         
@@ -574,8 +611,8 @@ class StreamingTerminalModule extends CanvasModule {
         if (this.wsHandler && this.wsHandler.isConnected()) {
           this.sendData(command);
         } else {
-          this.terminalOutput.push(`Error: Unknown command: ${cmd}`);
-          this.terminalOutput.push("Type 'help' or '/help' for available commands");
+          this.addToTerminalOutput(`Error: Unknown command: ${cmd}`);
+          this.addToTerminalOutput("Type 'help' or '/help' for available commands");
         }
     }
     
@@ -600,13 +637,13 @@ class StreamingTerminalModule extends CanvasModule {
   }
   
   connect(endpoint) {
-    // No need to add a message here - WebSocketHandler will show connecting status
+    // No message is added here - WebSocketHandler will handle the connection messaging
     
     // Use the WebSocket handler to establish the connection
     this.wsHandler.connect(endpoint)
       .catch(error => {
         console.error('Connection error:', error);
-        this.terminalOutput.push(`Error connecting: ${error.message}`);
+        this.addToTerminalOutput(`Error connecting: ${error.message}`);
         this.render();
       });
   }
@@ -617,7 +654,7 @@ class StreamingTerminalModule extends CanvasModule {
   
   sendData(data) {
     if (!this.wsHandler || !this.wsHandler.isConnected()) {
-      this.terminalOutput.push("Error: Not connected to a server");
+      this.addToTerminalOutput("Error: Not connected to a server");
       this.render();
       return false;
     }
@@ -627,7 +664,7 @@ class StreamingTerminalModule extends CanvasModule {
       return this.wsHandler.sendData(data);
     } catch (error) {
       console.error('Error sending data:', error);
-      this.terminalOutput.push(`Error sending data: ${error.message}`);
+      this.addToTerminalOutput(`Error sending data: ${error.message}`);
       this.render();
       return false;
     }
@@ -778,8 +815,8 @@ class StreamingTerminalModule extends CanvasModule {
           const fullCommand = [command, ...args].join(' ');
           return this.sendData(fullCommand);
         } else {
-          this.terminalOutput.push(`Error: Unknown command: ${command}`);
-          this.terminalOutput.push("Type 'help' for available commands");
+          this.addToTerminalOutput(`Error: Unknown command: ${command}`);
+          this.addToTerminalOutput("Type 'help' for available commands");
           this.render();
           return false;
         }

@@ -40,6 +40,8 @@ class WebSocketHandler {
         // Setup event handlers
         this.connection.onopen = () => {
           this.connected = true;
+          // Add the "Connected to..." message to terminal output
+          this.callbacks.onMessage(`Connected to ${endpoint}`);
           this.callbacks.onStatusChange('connected', `Connected to ${endpoint}`);
           this.callbacks.onConnect(endpoint);
           resolve(endpoint);
