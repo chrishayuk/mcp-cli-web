@@ -14,6 +14,9 @@ class CanvasTabManager {
     constructor(canvasManager) {
         this.canvasManager = canvasManager;
         this.contextMenu = null;
+        this._contextMenuHandler = null;
+        this._escapeHandler = null;
+        this._menuClickHandler = null;
     }
     
     /**
@@ -166,15 +169,20 @@ class CanvasTabManager {
             return;
         }
         
-        // Create context menu if it doesn't exist
-        this.contextMenu = document.getElementById('canvas-tab-context-menu');
+        // Try to find existing context menu from either implementation
+        this.contextMenu = document.getElementById('canvas-tab-context-menu') || 
+                          document.getElementById('canvasTabContextMenu');
         
+        // Create context menu if it doesn't exist
         if (!this.contextMenu) {
+            console.log("Creating new context menu");
             this.contextMenu = document.createElement('div');
             this.contextMenu.id = 'canvas-tab-context-menu';
             this.contextMenu.className = 'context-menu';
+            this.contextMenu.style.display = 'none'; // Explicitly set display none
             this.contextMenu.innerHTML = `
                 <ul>
+                    <li data-action="new"><i class="fas fa-plus"></i> New Canvas</li>
                     <li data-action="rename"><i class="fas fa-edit"></i> Rename</li>
                     <li data-action="duplicate"><i class="fas fa-copy"></i> Duplicate</li>
                     <li data-action="minimize"><i class="fas fa-window-minimize"></i> Minimize</li>
@@ -185,14 +193,40 @@ class CanvasTabManager {
                 </ul>
             `;
             
+            // Add inline styles for critical properties
+            this.contextMenu.style.position = 'fixed';
+            this.contextMenu.style.zIndex = '2000';
+            this.contextMenu.style.backgroundColor = '#252525';
+            this.contextMenu.style.border = '1px solid #444';
+            this.contextMenu.style.borderRadius = '4px';
+            this.contextMenu.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.4)';
+            
             document.body.appendChild(this.contextMenu);
+        } else {
+            console.log("Using existing context menu:", this.contextMenu.id);
+            
+            // Make sure the "New Canvas" option is added if it doesn't exist
+            if (!this.contextMenu.querySelector('li[data-action="new"], .context-menu-item[data-action="new"]')) {
+                const ul = this.contextMenu.querySelector('ul');
+                if (ul) {
+                    const newItem = document.createElement('li');
+                    newItem.dataset.action = 'new';
+                    newItem.innerHTML = '<i class="fas fa-plus"></i> New Canvas';
+                    ul.insertBefore(newItem, ul.firstChild);
+                }
+            }
         }
         
         // Track which tab was right-clicked
         let targetTabId = null;
         
-        // Add context menu event to tabs container
-        this.canvasManager.tabsContainer.addEventListener('contextmenu', (e) => {
+        // Remove any existing context menu handler
+        if (this._contextMenuHandler) {
+            this.canvasManager.tabsContainer.removeEventListener('contextmenu', this._contextMenuHandler);
+        }
+        
+        // Context menu handler function
+        this._contextMenuHandler = (e) => {
             const tab = e.target.closest('.canvas-tab');
             if (!tab) return;
             
@@ -204,34 +238,54 @@ class CanvasTabManager {
             // Position and show context menu
             this.contextMenu.style.left = `${e.pageX}px`;
             this.contextMenu.style.top = `${e.pageY}px`;
-            this.contextMenu.classList.add('active');
+            this.contextMenu.style.display = 'block';
             
             // Add one-time event listener to hide on click outside
             setTimeout(() => {
                 document.addEventListener('click', function hideMenu(e) {
                     if (!this.contextMenu.contains(e.target)) {
-                        this.contextMenu.classList.remove('active');
+                        this.contextMenu.style.display = 'none';
                         document.removeEventListener('click', hideMenu);
                     }
                 }.bind(this));
-            }, 0);
-        });
+            }, 10);
+        };
+        
+        // Add context menu event to tabs container
+        this.canvasManager.tabsContainer.addEventListener('contextmenu', this._contextMenuHandler);
+        
+        // Handle escape key
+        if (this._escapeHandler) {
+            document.removeEventListener('keydown', this._escapeHandler);
+        }
+        
+        this._escapeHandler = (e) => {
+            if (e.key === 'Escape' && this.contextMenu.style.display === 'block') {
+                this.contextMenu.style.display = 'none';
+            }
+        };
+        
+        document.addEventListener('keydown', this._escapeHandler);
         
         // Handle context menu actions
-        this.contextMenu.addEventListener('click', (e) => {
-            const action = e.target.closest('li')?.dataset.action;
+        if (this._menuClickHandler) {
+            this.contextMenu.removeEventListener('click', this._menuClickHandler);
+        }
+        
+        this._menuClickHandler = (e) => {
+            // Try to find the action from either li element or .context-menu-item
+            const action = e.target.closest('li')?.dataset.action || 
+                          e.target.closest('.context-menu-item')?.dataset.action;
+                          
             if (!action || !targetTabId) return;
             
             this.handleContextMenuAction(action, targetTabId);
-            this.contextMenu.classList.remove('active');
-        });
+            this.contextMenu.style.display = 'none';
+        };
         
-        // Hide context menu on escape
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && this.contextMenu.classList.contains('active')) {
-                this.contextMenu.classList.remove('active');
-            }
-        });
+        this.contextMenu.addEventListener('click', this._menuClickHandler);
+        
+        console.log("Tab context menu setup complete");
     }
     
     /**
@@ -243,6 +297,10 @@ class CanvasTabManager {
         const manager = this.canvasManager;
         
         switch (action) {
+            case 'new':
+                manager.addNewCanvas('New Canvas');
+                break;
+                
             case 'rename':
                 const newName = prompt('Enter new name for canvas:', '');
                 if (newName) manager.renameCanvas(tabId, newName);
@@ -271,6 +329,24 @@ class CanvasTabManager {
             case 'closeAll':
                 manager.closeAllCanvases();
                 break;
+        }
+    }
+    
+    /**
+     * Clean up event listeners
+     */
+    cleanup() {
+        // Clean up context menu event listeners
+        if (this._contextMenuHandler) {
+            this.canvasManager.tabsContainer.removeEventListener('contextmenu', this._contextMenuHandler);
+        }
+        
+        if (this._escapeHandler) {
+            document.removeEventListener('keydown', this._escapeHandler);
+        }
+        
+        if (this._menuClickHandler && this.contextMenu) {
+            this.contextMenu.removeEventListener('click', this._menuClickHandler);
         }
     }
 }

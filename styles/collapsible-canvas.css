@@ -1,29 +1,60 @@
 /**
  * styles/collapsible-canvas.css
- * Styles for the collapsible canvas system
+ * Consolidated styles for the collapsible canvas system
  */
 
-/* Main layout containers */
+/* ---------- LAYOUT & CONTAINERS ---------- */
 .main-container {
     position: relative;
     display: flex;
-}
-
-.terminal-window, .canvas-window {
-    transition: width 0.3s ease;
     overflow: hidden;
-}
-
-.canvas-window {
+    max-height: calc(100vh - 120px);
+  }
+  
+  .terminal-window, 
+  .canvas-window {
+    transition: width 0.3s cubic-bezier(0.19, 1, 0.22, 1);
+    overflow: hidden;
     min-width: 300px;
-}
-
-.terminal-window {
-    min-width: 300px;
-}
-
-/* Resize handle */
-.canvas-resizer {
+  }
+  
+  .canvas-window {
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+  
+  .canvas-window:not(.collapsed)::after {
+    content: "";
+    position: absolute;
+    left: 8px;
+    top: 8px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #80ff80;
+    z-index: 10;
+    opacity: 1;
+  }
+  
+  .terminal-window.expanded {
+    width: 100% !important;
+  }
+  
+  .canvas-container {
+    position: relative;
+    flex-grow: 1;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+  
+  .canvas-window:not(.collapsed) .canvas-container {
+    background-color: rgba(30, 30, 30, 0.5);
+  }
+  
+  /* ---------- RESIZE FUNCTIONALITY ---------- */
+  .canvas-resizer {
     position: absolute;
     top: 0;
     bottom: 0;
@@ -33,25 +64,25 @@
     z-index: 100;
     left: 50%;
     transform: translateX(-50%);
-}
-
-.canvas-resizer:hover, 
-.canvas-resizer:active {
+  }
+  
+  .canvas-resizer:hover, 
+  .canvas-resizer:active {
     background-color: rgba(80, 255, 80, 0.3);
-}
-
-.resizing {
+  }
+  
+  .resizing {
     cursor: col-resize;
     user-select: none;
-}
-
-.resizing iframe,
-.resizing canvas {
+  }
+  
+  .resizing iframe,
+  .resizing canvas {
     pointer-events: none;
-}
-
-/* Collapse/expand functionality */
-.canvas-collapse-button {
+  }
+  
+  /* ---------- COLLAPSE/EXPAND FUNCTIONALITY ---------- */
+  .canvas-collapse-button {
     background: none;
     border: none;
     color: #aaa;
@@ -63,43 +94,39 @@
     justify-content: center;
     margin-left: 8px;
     border-radius: 3px;
-}
-
-.canvas-collapse-button:hover {
+  }
+  
+  .canvas-collapse-button:hover {
     background-color: rgba(255, 255, 255, 0.1);
     color: #fff;
-}
-
-.canvas-window.collapsed {
+  }
+  
+  .canvas-window.collapsed {
     width: 0 !important;
     min-width: 0;
     overflow: hidden;
     padding: 0;
     margin: 0;
     border-left: none;
-}
-
-.canvas-window.collapsed .canvas-titlebar,
-.canvas-window.collapsed .canvas-container,
-.canvas-window.collapsed .canvas-tabs {
+  }
+  
+  .canvas-window.collapsed .canvas-titlebar,
+  .canvas-window.collapsed .canvas-container,
+  .canvas-window.collapsed .canvas-tabs {
     display: none;
-}
-
-.terminal-window.expanded {
-    width: 100% !important;
-}
-
-.expanding-button {
+  }
+  
+  .expanding-button {
     position: fixed;
-    right: 10px;
+    right: 15px;
     top: 50%;
     transform: translateY(-50%);
-    background: rgba(30, 30, 30, 0.7);
-    border: 1px solid #444;
+    background-color: rgba(40, 40, 40, 0.9);
+    border: 1px solid #555;
     border-radius: 4px;
     color: #aaa;
-    width: 24px;
-    height: 24px;
+    width: 28px;
+    height: 28px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -107,19 +134,108 @@
     z-index: 1000;
     opacity: 0;
     transition: opacity 0.3s ease;
-}
-
-.expanding-button:hover {
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+  }
+  
+  .expanding-button:hover {
     background-color: rgba(60, 60, 60, 0.9);
     color: #fff;
-}
-
-.canvas-window.collapsed ~ .expanding-button {
+  }
+  
+  .canvas-window.collapsed ~ .expanding-button {
     opacity: 1;
-}
-
-/* Canvas tabs */
-.canvas-tabs {
+  }
+  
+  /* ---------- TITLEBAR ---------- */
+  .canvas-titlebar {
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+    height: 30px;
+    background-color: #1a1a1a;
+    border-bottom: 1px solid #333;
+    user-select: none;
+    z-index: 5;
+  }
+  
+  .canvas-title {
+    display: flex;
+    align-items: center;
+    font-size: 12px;
+    color: #ddd;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .canvas-title i {
+    margin-right: 8px;
+    opacity: 0.7;
+  }
+  
+  .status {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    font-size: 12px;
+  }
+  
+  .status i {
+    margin-right: 5px;
+  }
+  
+  .status.success { color: #80ff80; }
+  .status.error { color: #ff8080; }
+  .status.warning { color: #ffff80; }
+  .status.info { color: #80a0ff; }
+  
+  /* ---------- MODULE SWITCHER ---------- */
+  .module-switcher {
+    display: flex;
+    margin-left: 12px;
+    padding-left: 12px;
+    border-left: 1px solid #444;
+    height: 100%;
+    align-items: center;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+  }
+  
+  .module-switcher:hover {
+    opacity: 1;
+  }
+  
+  .module-button {
+    background: none;
+    border: none;
+    width: 24px;
+    height: 24px;
+    margin: 0 3px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #888;
+    cursor: pointer;
+    border-radius: 3px;
+    font-size: 12px;
+    transition: all 0.2s;
+  }
+  
+  .module-button:hover {
+    color: #fff;
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  .module-button[data-active="true"],
+  .module-button.active {
+    background-color: rgba(80, 255, 80, 0.2);
+    color: #80ff80;
+    box-shadow: 0 0 5px rgba(80, 255, 80, 0.3);
+  }
+  
+  /* ---------- CANVAS TABS ---------- */
+  .canvas-tabs {
     display: flex;
     background-color: #1a1a1a;
     border-bottom: 1px solid #333;
@@ -128,31 +244,30 @@
     position: relative;
     user-select: none;
     z-index: 10;
-}
-
-.canvas-tabs-list {
+  }
+  
+  .canvas-tabs-list {
     display: flex;
     flex-grow: 1;
     overflow-x: auto;
     scrollbar-width: thin;
     scrollbar-color: #444 #1a1a1a;
-}
-
-.canvas-tabs-list::-webkit-scrollbar {
+  }
+  
+  .canvas-tabs-list::-webkit-scrollbar {
     height: 4px;
-}
-
-.canvas-tabs-list::-webkit-scrollbar-track {
+  }
+  
+  .canvas-tabs-list::-webkit-scrollbar-track {
     background: #1a1a1a;
-}
-
-.canvas-tabs-list::-webkit-scrollbar-thumb {
+  }
+  
+  .canvas-tabs-list::-webkit-scrollbar-thumb {
     background-color: #444;
     border-radius: 2px;
-}
-
-/* Individual canvas tab */
-.canvas-tab {
+  }
+  
+  .canvas-tab {
     display: flex;
     align-items: center;
     padding: 0 10px;
@@ -165,39 +280,50 @@
     border-right: 1px solid #333;
     transition: background-color 0.2s;
     position: relative;
-}
-
-.canvas-tab.active {
+  }
+  
+  .canvas-tab.active {
     background-color: #2d2d2d;
     color: #fff;
     font-weight: 500;
     border-bottom: 2px solid #80ff80;
-}
-
-.canvas-tab.minimized {
+  }
+  
+  .canvas-tab.active::after {
+    content: "";
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background-color: #80ff80;
+    z-index: 2;
+  }
+  
+  .canvas-tab.minimized {
     background-color: #252525;
     color: #999;
     font-style: italic;
-}
-
-.canvas-tab:hover {
+  }
+  
+  .canvas-tab:hover {
     background-color: #2a2a2a;
-}
-
-.canvas-tab-icon {
+  }
+  
+  .canvas-tab-icon {
     margin-right: 8px;
     font-size: 12px;
     opacity: 0.7;
-}
-
-.canvas-tab-title {
+  }
+  
+  .canvas-tab-title {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     flex-grow: 1;
-}
-
-.canvas-tab-close {
+  }
+  
+  .canvas-tab-close {
     margin-left: 8px;
     width: 16px;
     height: 16px;
@@ -207,22 +333,21 @@
     border-radius: 50%;
     opacity: 0.6;
     font-size: 10px;
-}
-
-.canvas-tab-close:hover {
+  }
+  
+  .canvas-tab-close:hover {
     background-color: rgba(255,255,255,0.1);
     opacity: 1;
-}
-
-/* Tab actions */
-.canvas-tabs-actions {
+  }
+  
+  .canvas-tabs-actions {
     display: flex;
     align-items: center;
     padding: 0 5px;
     border-left: 1px solid #333;
-}
-
-.tab-action-button {
+  }
+  
+  .tab-action-button {
     background: none;
     border: none;
     color: #aaa;
@@ -235,15 +360,15 @@
     font-size: 10px;
     border-radius: 3px;
     transition: all 0.2s;
-}
-
-.tab-action-button:hover {
+  }
+  
+  .tab-action-button:hover {
     color: #fff;
     background-color: rgba(255,255,255,0.1);
-}
-
-/* Canvas instances */
-.canvas-instance {
+  }
+  
+  /* ---------- CANVAS INSTANCES ---------- */
+  .canvas-instance {
     position: absolute;
     top: 0;
     left: 0;
@@ -254,32 +379,31 @@
     overflow: hidden;
     opacity: 0;
     transition: opacity 0.2s ease;
-}
-
-.canvas-instance.active {
+  }
+  
+  .canvas-instance.active {
     display: block;
     opacity: 1;
-}
-
-/* Hide original canvas titlebar */
-.canvas-instance .canvas-titlebar {
+    animation: fadeIn 0.2s ease;
+  }
+  
+  .canvas-instance .canvas-titlebar {
     display: none;
-}
-
-/* Fix canvas positioning */
-.canvas-instance canvas {
+  }
+  
+  .canvas-instance canvas {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%) scale(1);
     transform-origin: center center;
     transition: transform 0.2s ease;
-}
-
-/* Minimized canvases */
-.minimized-canvases {
+  }
+  
+  /* ---------- MINIMIZED CANVASES ---------- */
+  .minimized-canvases {
     position: fixed;
-    bottom: 40px; /* Position above status bar */
+    bottom: 40px;
     right: 10px;
     display: flex;
     flex-direction: column;
@@ -288,9 +412,9 @@
     overflow-y: auto;
     overflow-x: hidden;
     pointer-events: auto;
-}
-
-.minimized-canvas {
+  }
+  
+  .minimized-canvas {
     background-color: #2a2a2a;
     border: 1px solid #444;
     border-radius: 3px;
@@ -307,20 +431,20 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-}
-
-.minimized-canvas:hover {
+  }
+  
+  .minimized-canvas:hover {
     background-color: #333;
     transform: translateX(-5px);
-}
-
-.minimized-canvas-icon {
+  }
+  
+  .minimized-canvas-icon {
     margin-right: 5px;
     opacity: 0.7;
-}
-
-/* Canvas controls */
-.canvas-instance .canvas-controls {
+  }
+  
+  /* ---------- CANVAS CONTROLS ---------- */
+  .canvas-instance .canvas-controls {
     position: absolute;
     bottom: 10px;
     left: 10px;
@@ -330,9 +454,9 @@
     border-radius: 4px;
     padding: 5px;
     z-index: 20;
-}
-
-.canvas-instance .terminal-button {
+  }
+  
+  .canvas-instance .terminal-button {
     background: none;
     border: none;
     color: #ccc;
@@ -345,368 +469,244 @@
     font-size: 12px;
     margin-bottom: 5px;
     border-radius: 3px;
-}
-
-.canvas-instance .terminal-button:last-child {
+  }
+  
+  .canvas-instance .terminal-button:last-child {
     margin-bottom: 0;
-}
-
-.canvas-instance .terminal-button:hover {
+  }
+  
+  .canvas-instance .terminal-button:hover {
     background-color: rgba(255,255,255,0.1);
     color: #fff;
-}
-
-/* Instructions overlay */
-.canvas-instance .instructions-overlay {
+  }
+  
+  /* ---------- INSTRUCTIONS OVERLAY ---------- */
+  .canvas-instance .instructions-overlay {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
     text-align: center;
-    color: rgba(144, 238, 144, 0.5);
+    color: rgba(144, 238, 144, 0.7);
     pointer-events: none;
     z-index: 10;
     width: 300px;
     max-width: 80%;
-}
-
-.canvas-instance .instructions-overlay i {
-    font-size: 32px;
-    margin-bottom: 10px;
-}
-
-.canvas-instance .instructions-overlay p {
+    text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+  }
+  
+  .canvas-instance .instructions-overlay i {
+    font-size: 36px;
+    margin-bottom: 15px;
+  }
+  
+  .canvas-instance .instructions-overlay p {
     margin: 5px 0;
     font-size: 14px;
-}
-
-/* Keyboard shortcut hints */
-.keyboard-shortcut-hints {
+  }
+  
+  /* ---------- KEYBOARD SHORTCUTS ---------- */
+  /* Hide original keyboard shortcuts */
+  .keyboard-shortcut-hints {
+    display: none !important;
+  }
+  
+  /* Compact keyboard shortcuts widget */
+  .keyboard-shortcut-compact {
     position: fixed;
-    bottom: 40px; /* Above status bar */
-    left: 10px;
-    font-size: 11px;
-    color: #aaa;
-    pointer-events: none;
-    z-index: 100;
-    background-color: rgba(20, 20, 20, 0.7);
-    padding: 5px 8px;
+    right: 10px;
+    bottom: 10px;
+    background-color: rgba(0, 0, 0, 0.7);
+    border: 1px solid rgba(0, 255, 0, 0.3);
     border-radius: 4px;
-    line-height: 1.5;
-    user-select: none;
-    border: 1px solid #333;
-    max-width: 200px;
-}
-
-.keyboard-shortcut-hint {
-    margin-bottom: 4px;
-    white-space: nowrap;
-}
-
-.keyboard-shortcut-hint kbd {
-    background-color: #333;
-    border-radius: 3px;
-    padding: 1px 3px;
-    margin: 0 2px;
-    color: #ccc;
-    display: inline-block;
-    font-family: monospace;
+    padding: 5px;
     font-size: 10px;
-    min-width: 14px;
+    color: rgba(0, 255, 0, 0.7);
+    z-index: 100;
+    max-width: 150px;
+    opacity: 0.5;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+  
+  .keyboard-shortcut-compact:hover {
+    opacity: 1;
+    transform: translateY(-5px);
+  }
+  
+  .keyboard-shortcut-compact.hidden {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(10px);
+  }
+  
+  .keyboard-shortcut-compact .shortcut-title {
+    font-weight: bold;
+    margin-bottom: 2px;
+    padding-bottom: 2px;
+    border-bottom: 1px solid rgba(0, 255, 0, 0.3);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .keyboard-shortcut-compact .shortcut-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3px;
+  }
+  
+  .keyboard-shortcut-compact .shortcut-list div {
+    font-size: 9px;
+    white-space: nowrap;
+  }
+  
+  .keyboard-shortcut-compact kbd {
+    background-color: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(0, 255, 0, 0.4);
+    border-radius: 3px;
+    padding: 0px 2px;
+    font-family: monospace;
+    font-size: 8px;
+    min-width: 8px;
     text-align: center;
-    box-shadow: 0 1px 1px rgba(0,0,0,0.2);
-    border: 1px solid #444;
-}
-
-/* Context menu */
-.context-menu {
-    position: absolute;
+    display: inline-block;
+    margin: 0 1px;
+  }
+  
+  .keyboard-shortcut-toggle {
+    position: fixed;
+    right: 10px;
+    bottom: 10px;
+    background-color: rgba(0, 0, 0, 0.7);
+    border: 1px solid rgba(0, 255, 0, 0.3);
+    border-radius: 4px;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(0, 255, 0, 0.7);
+    cursor: pointer;
+    z-index: 101;
+    font-size: 12px;
+  }
+  
+  .keyboard-shortcut-toggle:hover {
+    background-color: rgba(0, 0, 0, 0.9);
+    color: rgba(0, 255, 0, 1);
+  }
+  
+  /* ---------- CONTEXT MENU ---------- */
+  .context-menu {
+    position: fixed;
     background-color: #252525;
     border: 1px solid #444;
     border-radius: 4px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
-    z-index: 2000; /* Above everything */
+    z-index: 2000;
     min-width: 180px;
     padding: 4px 0;
     font-size: 12px;
     user-select: none;
-}
-
-.context-menu-item {
+    display: none;
+  }
+  
+  .context-menu.active {
+    display: block;
+    animation: contextMenuFadeIn 0.15s ease-out;
+  }
+  
+  .context-menu ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  
+  .context-menu li {
+    padding: 6px 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    transition: background-color 0.2s;
+    color: #ddd;
+  }
+  
+  .context-menu li:hover {
+    background-color: #333;
+    color: #fff;
+  }
+  
+  .context-menu li i {
+    margin-right: 8px;
+    width: 16px;
+    text-align: center;
+    opacity: 0.7;
+  }
+  
+  .context-menu li:hover i {
+    opacity: 1;
+  }
+  
+  .context-menu .divider,
+  .context-menu-separator {
+    height: 1px;
+    background-color: #444;
+    margin: 4px 0;
+    padding: 0;
+  }
+  
+  .context-menu-item {
     padding: 6px 12px;
     cursor: pointer;
     color: #ddd;
     transition: background-color 0.2s;
-}
-
-.context-menu-item:hover {
+  }
+  
+  .context-menu-item:hover {
     background-color: #333;
     color: #fff;
-}
-
-.context-menu-separator {
-    height: 1px;
-    background-color: #444;
-    margin: 4px 0;
-}
-
-.context-menu-item:active {
+  }
+  
+  .context-menu-item:active {
     background-color: #3a3a3a;
-}
-
-.context-menu-item.disabled {
+  }
+  
+  .context-menu-item.disabled {
     color: #666;
     cursor: default;
     pointer-events: none;
-}
-
-/* Animations */
-@keyframes fadeIn {
+  }
+  
+  /* ---------- ANIMATIONS ---------- */
+  @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
-}
-
-.canvas-instance.active {
-    animation: fadeIn 0.2s ease;
-}
-
-/* Fix main canvas window */
-.canvas-window {
-    display: flex;
-    flex-direction: column;
-    position: relative;
-}
-
-.canvas-window .canvas-titlebar {
-    z-index: 5;
-}
-
-/* Fix canvas container positioning */
-.canvas-container {
-    position: relative;
-    flex-grow: 1;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
+  }
+  
+  @keyframes contextMenuFadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  /* ---------- RESPONSIVE ADJUSTMENTS ---------- */
+  @media (max-width: 768px) {
     .canvas-tab {
-        min-width: 80px;
-        padding: 0 8px;
+      min-width: 80px;
+      padding: 0 8px;
     }
     
     .minimized-canvases {
-        bottom: 35px;
-        right: 5px;
+      bottom: 35px;
+      right: 5px;
     }
     
     .minimized-canvas {
-        padding: 3px 8px;
-        font-size: 11px;
+      padding: 3px 8px;
+      font-size: 11px;
     }
     
-    .keyboard-shortcut-hints {
-        bottom: 35px;
-        max-width: 150px;
-        font-size: 10px;
+    .keyboard-shortcut-compact {
+      max-width: 150px;
+      font-size: 10px;
     }
-}
-
-/**
- * Additional CSS fixes for the collapsible canvas system
- * Add these to your collapsible-canvas.css file
- */
-
-/* Module switcher in titlebar */
-.module-switcher {
-    display: flex;
-    margin-left: 12px;
-    margin-right: 12px;
-    padding-left: 12px;
-    border-left: 1px solid #444;
-}
-
-.module-button {
-    background: none;
-    border: none;
-    width: 24px;
-    height: 24px;
-    margin: 0 3px;
-    padding: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #888;
-    cursor: pointer;
-    border-radius: 3px;
-    font-size: 12px;
-    transition: all 0.2s;
-}
-
-.module-button:hover {
-    color: #fff;
-    background-color: rgba(255, 255, 255, 0.1);
-}
-
-.module-button[data-active="true"] {
-    color: #80ff80;
-}
-
-/* Fix keyboard shortcuts display - move to chat window */
-.keyboard-shortcut-compact {
-    position: absolute;
-    bottom: 45px;
-    left: 8px;
-    font-size: 11px;
-    color: #888;
-    background-color: rgba(30, 30, 30, 0.7);
-    border: 1px solid #444;
-    border-radius: 4px;
-    padding: 4px;
-    z-index: 100;
-    width: auto;
-    max-width: 160px;
-    opacity: 0.7;
-    transition: opacity 0.2s;
-    pointer-events: none;
-}
-
-.keyboard-shortcut-compact:hover {
-    opacity: 1;
-}
-
-.keyboard-shortcut-compact .shortcut-title {
-    font-weight: bold;
-    margin-bottom: 2px;
-    color: #aaa;
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
-.keyboard-shortcut-compact .shortcut-list {
-    display: flex;
-    flex-wrap: wrap;
-}
-
-.keyboard-shortcut-compact .shortcut-list div {
-    margin-right: 8px;
-    white-space: nowrap;
-    margin-bottom: 2px;
-    font-size: 10px;
-}
-
-.keyboard-shortcut-compact kbd {
-    background-color: #333;
-    border: 1px solid #555;
-    border-radius: 3px;
-    box-shadow: 0 1px 1px rgba(0,0,0,0.2);
-    color: #ddd;
-    display: inline-block;
-    font-family: monospace;
-    font-size: 9px;
-    line-height: 1;
-    padding: 1px 2px;
-    margin: 0 1px;
-}
-
-/* Hide original keyboard shortcuts */
-.keyboard-shortcut-hints {
-    display: none;
-}
-
-/* Fix tab help overlap */
-.main-container {
-    position: relative;
-    overflow: hidden;
-    max-height: calc(100vh - 120px); /* Adjust based on your UI */
-}
-
-/* Better visibility for active module */
-.canvas-window::after {
-    content: "";
-    position: absolute;
-    left: 8px;
-    top: 8px;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background-color: #80ff80;
-    z-index: 10;
-    opacity: 0;
-    transition: opacity 0.3s;
-}
-
-.canvas-window:not(.collapsed)::after {
-    opacity: 1;
-}
-
-/* Make canvas expanding button more visible */
-.expanding-button {
-    width: 28px;
-    height: 28px;
-    background-color: rgba(40, 40, 40, 0.9);
-    border: 1px solid #555;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-    right: 15px;
-}
-
-/* Animate the collapse/expand */
-.canvas-window,
-.terminal-window {
-    transition: width 0.3s cubic-bezier(0.19, 1, 0.22, 1);
-}
-
-/* Auto-show modules on hover */
-.module-switcher {
-    opacity: 0.7;
-    transition: opacity 0.2s;
-}
-
-.module-switcher:hover {
-    opacity: 1;
-}
-
-/* Enhance the active canvas tab */
-.canvas-tab.active {
-    position: relative;
-    background-color: #2d2d2d;
-    border-bottom: 2px solid #80ff80;
-}
-
-.canvas-tab.active::after {
-    content: "";
-    position: absolute;
-    bottom: -2px;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background-color: #80ff80;
-    z-index: 2;
-}
-
-/* Improve canvas visibility when empty */
-.canvas-window:not(.collapsed) .canvas-container {
-    background-color: rgba(30, 30, 30, 0.5);
-}
-
-/* Improve the visibility of instructions */
-.canvas-instance .instructions-overlay {
-    color: rgba(144, 238, 144, 0.7);
-    text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-}
-
-.canvas-instance .instructions-overlay i {
-    font-size: 36px;
-    margin-bottom: 15px;
-}
-
-/* Fix positioning for context menu */
-.context-menu {
-    position: fixed;
-}
+  }

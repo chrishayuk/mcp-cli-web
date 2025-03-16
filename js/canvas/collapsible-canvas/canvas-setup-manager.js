@@ -13,6 +13,8 @@ class CanvasSetupManager {
      */
     constructor(canvasManager) {
         this.canvasManager = canvasManager;
+        this._shortcutsDisplay = null;
+        this._shortcutsToggle = null;
     }
     
     /**
@@ -118,17 +120,18 @@ class CanvasSetupManager {
      */
     setupModuleSwitcher() {
         console.log("Setting up module switcher");
-        // Add module buttons to canvas titlebar
+        
+        // Get reference to the canvas titlebar
         const canvasTitlebar = document.querySelector('.canvas-window .canvas-titlebar');
         if (!canvasTitlebar) {
             console.error("Cannot set up module switcher - titlebar not found");
             return;
         }
         
-        // Skip if already exists
-        if (canvasTitlebar.querySelector('.module-switcher')) {
-            console.log("Module switcher already exists, skipping creation");
-            return;
+        // Check if module switcher already exists and remove it to recreate
+        const existingSwitcher = canvasTitlebar.querySelector('.module-switcher');
+        if (existingSwitcher) {
+            existingSwitcher.remove();
         }
         
         // Create module switcher container
@@ -164,13 +167,51 @@ class CanvasSetupManager {
         // Insert module switcher after canvas title
         const titleElement = canvasTitlebar.querySelector('.canvas-title');
         if (titleElement) {
-            titleElement.parentNode.insertBefore(moduleSwitcher, titleElement.nextSibling);
+            // Force insertion right after the title element
+            if (titleElement.nextSibling) {
+                canvasTitlebar.insertBefore(moduleSwitcher, titleElement.nextSibling);
+            } else {
+                canvasTitlebar.appendChild(moduleSwitcher);
+            }
+            
+            console.log("Module switcher added after title element");
         } else {
-            canvasTitlebar.appendChild(moduleSwitcher);
+            // Insert at the beginning of canvas titlebar if no title element
+            if (canvasTitlebar.firstChild) {
+                canvasTitlebar.insertBefore(moduleSwitcher, canvasTitlebar.firstChild);
+            } else {
+                canvasTitlebar.appendChild(moduleSwitcher);
+            }
+            
+            console.log("Module switcher added to canvas titlebar");
         }
         
         // Store reference for updating active state
         this.canvasManager.moduleSwitcher = moduleSwitcher;
+        
+        // Set active module based on canvasManager.currentModule
+        if (this.canvasManager.currentModule && this.canvasManager.currentModule.moduleName) {
+            this.updateModuleSwitcherActiveState(this.canvasManager.currentModule.moduleName);
+        }
+    }
+
+    /**
+     * Update module switcher active state
+     */
+    updateModuleSwitcherActiveState(moduleName) {
+        if (!this.canvasManager.moduleSwitcher) return;
+        
+        // Reset all buttons
+        const buttons = this.canvasManager.moduleSwitcher.querySelectorAll('.module-button');
+        buttons.forEach(button => {
+            button.classList.remove('active');
+        });
+        
+        // Set active button
+        const activeButton = this.canvasManager.moduleSwitcher.querySelector(`.module-button[data-module="${moduleName}"]`);
+        if (activeButton) {
+            activeButton.classList.add('active');
+        }
     }
     
     /**
@@ -209,7 +250,7 @@ class CanvasSetupManager {
             // Escape to collapse canvas section
             if (e.key === 'Escape' && !e.ctrlKey && !e.altKey && !e.shiftKey) {
                 // Only collapse if no modal is open
-                const activeModal = document.querySelector('.modal.active, .dialog.active, .popup.active');
+                const activeModal = document.querySelector('.modal.active, .dialog.active, .popup.active, .context-menu[style*="display: block"]');
                 if (!activeModal) {
                     manager.collapseCanvasSection();
                 }
@@ -224,16 +265,25 @@ class CanvasSetupManager {
      * Set up keyboard shortcuts display
      */
     setupKeyboardShortcutsDisplay() {
-        // Find existing keyboard shortcuts
+        // Remove any existing keyboard shortcuts display
         const existingShortcuts = document.querySelector('.keyboard-shortcut-hints');
         if (existingShortcuts) {
-            // Remove existing or hide it
             existingShortcuts.remove();
+        }
+        
+        const existingCompact = document.querySelector('.keyboard-shortcut-compact');
+        if (existingCompact) {
+            existingCompact.remove();
+        }
+        
+        const existingToggle = document.querySelector('.keyboard-shortcut-toggle');
+        if (existingToggle) {
+            existingToggle.remove();
         }
         
         // Create a more compact keyboard shortcuts display
         const shortcutsDisplay = document.createElement('div');
-        shortcutsDisplay.className = 'keyboard-shortcut-compact';
+        shortcutsDisplay.className = 'keyboard-shortcut-compact hidden';
         shortcutsDisplay.innerHTML = `
             <div class="shortcut-title">Keyboard Shortcuts <i class="fas fa-keyboard"></i></div>
             <div class="shortcut-list">
@@ -244,11 +294,29 @@ class CanvasSetupManager {
             </div>
         `;
         
-        // Add to bottom of chat window instead
-        const terminalWindow = document.querySelector('.terminal-window');
-        if (terminalWindow) {
-            terminalWindow.appendChild(shortcutsDisplay);
-        }
+        // Create toggle button
+        const toggleButton = document.createElement('div');
+        toggleButton.className = 'keyboard-shortcut-toggle';
+        toggleButton.innerHTML = '<i class="fas fa-keyboard"></i>';
+        toggleButton.title = 'Toggle Keyboard Shortcuts';
+        
+        // Add click event to toggle
+        toggleButton.addEventListener('click', () => {
+            shortcutsDisplay.classList.toggle('hidden');
+        });
+        
+        // Add to document
+        document.body.appendChild(shortcutsDisplay);
+        document.body.appendChild(toggleButton);
+        
+        // Store references for later cleanup
+        this._shortcutsDisplay = shortcutsDisplay;
+        this._shortcutsToggle = toggleButton;
+        
+        // Auto-hide after 3 seconds if not already hidden
+        setTimeout(() => {
+            shortcutsDisplay.classList.add('hidden');
+        }, 3000);
     }
     
     /**
@@ -370,6 +438,20 @@ class CanvasSetupManager {
             attributes: true,
             attributeFilter: ['src', 'style', 'class']
         });
+    }
+    
+    /**
+     * Clean up resources
+     */
+    cleanup() {
+        // Remove shortcut display elements
+        if (this._shortcutsDisplay && document.body.contains(this._shortcutsDisplay)) {
+            document.body.removeChild(this._shortcutsDisplay);
+        }
+        
+        if (this._shortcutsToggle && document.body.contains(this._shortcutsToggle)) {
+            document.body.removeChild(this._shortcutsToggle);
+        }
     }
 }
 
