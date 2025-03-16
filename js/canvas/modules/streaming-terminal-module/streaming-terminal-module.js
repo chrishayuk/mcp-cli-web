@@ -1,6 +1,6 @@
 /**
- * Streaming Terminal Module (Fixed Version)
- * A simplified terminal emulator for web canvas
+ * Streaming Terminal Module
+ * A simplified terminal emulator for web canvas with modular components
  */
 class StreamingTerminalModule extends CanvasModule {
   constructor() {
@@ -8,8 +8,6 @@ class StreamingTerminalModule extends CanvasModule {
     console.log('Terminal Module constructed');
     
     // Terminal state and display settings
-    this.connected = false;
-    this.connection = null;
     this.rows = 24;
     this.cols = 80;
     this.charWidth = 9;
@@ -32,14 +30,54 @@ class StreamingTerminalModule extends CanvasModule {
     this.directInputEnabled = false;
     this.outputContainer = null;
     
+    // Initialize modules
+    this.initializeModules();
+    
     // Add initial output
     this.initializeTerminalOutput();
   }
   
+  /**
+   * Initialize the WebSocket and SlashCommand modules
+   */
+  initializeModules() {
+    // Initialize WebSocket handler with callbacks
+    this.wsHandler = new WebSocketHandler({
+      onConnect: (endpoint) => {
+        this.terminalOutput.push(`Connected to ${endpoint}`);
+        this.updateStatus('connected', 'Connected');
+        this.manager?.updateCanvasStatus('success', 'Connected');
+        this.render();
+      },
+      onDisconnect: () => {
+        this.terminalOutput.push('Disconnected from server');
+        this.updateStatus('disconnected', 'Disconnected');
+        this.manager?.updateCanvasStatus('info', 'Disconnected');
+        this.render();
+      },
+      onMessage: (data) => {
+        this.terminalOutput.push(`${data}`);
+        this.render();
+      },
+      onError: (error) => {
+        this.terminalOutput.push(`Error: ${error.message || 'Unknown error'}`);
+        this.updateStatus('error', 'Error');
+        this.manager?.updateCanvasStatus('error', 'Connection error');
+        this.render();
+      },
+      onStatusChange: (status, message) => {
+        this.updateStatus(status, message);
+      }
+    });
+    
+    // SlashCommand handler will be initialized when UI is ready
+    this.slashCommandHandler = null;
+  }
+  
   initializeTerminalOutput() {
     // Check if we have a connection
-    const isConnected = this.connected && this.connection;
-    const endpoint = isConnected ? this.connection._url || '' : '';
+    const isConnected = this.wsHandler?.isConnected() || false;
+    const endpoint = isConnected ? this.wsHandler.getEndpoint() : '';
     
     if (isConnected && endpoint) {
       this.terminalOutput = [
@@ -70,8 +108,8 @@ class StreamingTerminalModule extends CanvasModule {
   }
   
   deactivate() {
-    if (this.connected) {
-      this.disconnect();
+    if (this.wsHandler?.isConnected()) {
+      this.wsHandler.disconnect();
     }
     this.disableDirectInput();
     return super.deactivate();
@@ -152,77 +190,24 @@ class StreamingTerminalModule extends CanvasModule {
       this.cursor.style.animation = 'blink 1s step-end infinite';
       this.commandLine.appendChild(this.cursor);
       
-      // Create slash command suggestions dropdown
-      this.slashCommandDropdown = document.createElement('div');
-      this.slashCommandDropdown.className = 'slash-command-dropdown';
-      this.slashCommandDropdown.style.cssText = `
-        position: absolute;
-        bottom: 60px;
-        left: 10px;
-        background: rgba(0, 0, 0, 0.9);
-        border: 1px solid #333;
-        border-radius: 4px;
-        padding: 5px 0;
-        display: none;
-        z-index: 103;
-        font-family: monospace;
-        font-size: 14px;
-        color: #fff;
-        width: 150px;
-        max-height: 200px;
-        overflow-y: auto;
-      `;
-      
-      // Slash commands
-      const slashCommands = [
-        { cmd: '/help', desc: 'Show help information' },
-        { cmd: '/clear', desc: 'Clear the terminal' },
-        { cmd: '/connect', desc: 'Connect to WebSocket server' },
-        { cmd: '/disconnect', desc: 'Disconnect from server' }
-      ];
-      
-      // Add slash command options
-      slashCommands.forEach(cmdInfo => {
-        const option = document.createElement('div');
-        option.className = 'slash-command-option';
-        option.style.cssText = `
-          padding: 5px 10px;
-          cursor: pointer;
-          transition: background-color 0.2s;
-        `;
-        option.innerHTML = `<b>${cmdInfo.cmd}</b>`;
-        
-        option.addEventListener('mouseenter', () => {
-          option.style.backgroundColor = '#333';
-        });
-        
-        option.addEventListener('mouseleave', () => {
-          option.style.backgroundColor = 'transparent';
-        });
-        
-        option.addEventListener('click', () => {
-          // Add command to input
-          this.inputElement.value = cmdInfo.cmd;
-          this.visibleInput.textContent = cmdInfo.cmd;
-          
-          // Hide dropdown
-          this.slashCommandDropdown.style.display = 'none';
-          
-          // Focus input
-          this.inputElement.focus();
-        });
-        
-        this.slashCommandDropdown.appendChild(option);
+      // Initialize the slash command handler
+      this.slashCommandHandler = new SlashCommandHandler({
+        parentElement: canvasContainer,
+        onCommandExecute: (cmd, args) => {
+          // Convert slash commands to regular commands
+          this.processCommand(cmd + (args.length > 0 ? ' ' + args.join(' ') : ''));
+        }
       });
       
-      // Function to show the full slash command dropdown
-      this.showFullSlashCommandDropdown = () => {
-        const options = this.slashCommandDropdown.querySelectorAll('.slash-command-option');
-        options.forEach(option => {
-          option.style.display = 'block';
-        });
-        this.slashCommandDropdown.style.display = 'block';
-      };
+      // Create slash command dropdown
+      this.slashCommandDropdown = this.slashCommandHandler.createDropdownUI();
+      
+      // Set command select callback
+      this.slashCommandHandler.setCommandSelectCallback((command) => {
+        this.inputElement.value = command;
+        this.visibleInput.textContent = command;
+        this.inputElement.focus();
+      });
       
       // Add style for cursor blinking
       const style = document.createElement('style');
@@ -299,7 +284,7 @@ class StreamingTerminalModule extends CanvasModule {
         }
         
         // Hide slash command dropdown
-        this.slashCommandDropdown.style.display = 'none';
+        this.slashCommandHandler.hideDropdown();
       });
       
       // Event listener for key input
@@ -307,163 +292,19 @@ class StreamingTerminalModule extends CanvasModule {
         // Update visible text
         this.visibleInput.textContent = this.inputElement.value;
         
-        // Show slash command suggestions
+        // Handle slash commands
         if (this.inputElement.value === '/') {
-          this.showFullSlashCommandDropdown();
+          this.slashCommandHandler.showAllCommands();
         } else if (this.inputElement.value.startsWith('/')) {
-          // Filter commands based on input
-          const inputText = this.inputElement.value.toLowerCase();
-          const options = this.slashCommandDropdown.querySelectorAll('.slash-command-option');
-          let hasVisibleOptions = false;
-          
-          options.forEach(option => {
-            const cmdText = option.querySelector('b').textContent.toLowerCase();
-            if (cmdText.startsWith(inputText)) {
-              option.style.display = 'block';
-              hasVisibleOptions = true;
-            } else {
-              option.style.display = 'none';
-            }
-          });
-          
-          // Show/hide dropdown based on matches
-          this.slashCommandDropdown.style.display = hasVisibleOptions ? 'block' : 'none';
+          this.slashCommandHandler.filterDropdown(this.inputElement.value);
         } else {
-          // Hide dropdown if not a slash command
-          this.slashCommandDropdown.style.display = 'none';
+          this.slashCommandHandler.hideDropdown();
         }
       });
       
-      // Function to show the full slash command dropdown
-      this.showFullSlashCommandDropdown = () => {
-        const options = this.slashCommandDropdown.querySelectorAll('.slash-command-option');
-        options.forEach(option => {
-          option.style.display = 'block';
-        });
-        this.slashCommandDropdown.style.display = 'block';
-      };
-      
       // Handle special keys
       this.inputElement.addEventListener('keydown', (e) => {
-        // Handle Enter to process command
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          const command = this.inputElement.value;
-          
-          // Hide slash command dropdown
-          this.slashCommandDropdown.style.display = 'none';
-          
-          if (command && command.trim()) {
-            // Add command to output history (without the '>' prefix for natural experience)
-            this.terminalOutput.push(`${command}`);
-            
-            // Process the command
-            this.processCommand(command);
-            
-            // Add to command history
-            if (this.commandHistory.length === 0 || 
-                this.commandHistory[this.commandHistory.length - 1] !== command) {
-              this.commandHistory.push(command);
-              this.historyIndex = this.commandHistory.length;
-            }
-          }
-          
-          // Clear input
-          this.inputElement.value = '';
-          this.visibleInput.textContent = '';
-          
-          // Update display
-          this.render();
-          return;
-        }
-        
-        // Handle Backspace
-        if (e.key === 'Backspace') {
-          setTimeout(() => {
-            this.visibleInput.textContent = this.inputElement.value;
-            
-            // If the input is now just "/", show all commands
-            if (this.inputElement.value === '/') {
-              this.showFullSlashCommandDropdown();
-            } else if (this.inputElement.value.startsWith('/')) {
-              // Filter commands
-              const inputText = this.inputElement.value.toLowerCase();
-              const options = this.slashCommandDropdown.querySelectorAll('.slash-command-option');
-              let hasVisibleOptions = false;
-              
-              options.forEach(option => {
-                const cmdText = option.querySelector('b').textContent.toLowerCase();
-                if (cmdText.startsWith(inputText)) {
-                  option.style.display = 'block';
-                  hasVisibleOptions = true;
-                } else {
-                  option.style.display = 'none';
-                }
-              });
-              
-              this.slashCommandDropdown.style.display = hasVisibleOptions ? 'block' : 'none';
-            } else {
-              this.slashCommandDropdown.style.display = 'none';
-            }
-          }, 0);
-        }
-        
-        // Handle Escape to hide dropdown
-        if (e.key === 'Escape') {
-          this.slashCommandDropdown.style.display = 'none';
-        }
-        
-        // Handle Up arrow for command history
-        if (e.key === 'ArrowUp') {
-          e.preventDefault();
-          if (this.commandHistory.length > 0 && this.historyIndex > 0) {
-            this.historyIndex--;
-            const prevCmd = this.commandHistory[this.historyIndex];
-            this.inputElement.value = prevCmd;
-            this.visibleInput.textContent = prevCmd;
-            
-            // Hide dropdown when navigating history
-            this.slashCommandDropdown.style.display = 'none';
-          }
-          return;
-        }
-        
-        // Handle Down arrow for command history
-        if (e.key === 'ArrowDown') {
-          e.preventDefault();
-          if (this.historyIndex < this.commandHistory.length - 1) {
-            this.historyIndex++;
-            const nextCmd = this.commandHistory[this.historyIndex];
-            this.inputElement.value = nextCmd;
-            this.visibleInput.textContent = nextCmd;
-          } else {
-            this.historyIndex = this.commandHistory.length;
-            this.inputElement.value = '';
-            this.visibleInput.textContent = '';
-          }
-          
-          // Hide dropdown when navigating history
-          this.slashCommandDropdown.style.display = 'none';
-          return;
-        }
-        
-        // Tab to autocomplete slash command
-        if (e.key === 'Tab' && this.inputElement.value.startsWith('/')) {
-          e.preventDefault();
-          
-          const visibleOptions = Array.from(this.slashCommandDropdown.querySelectorAll('.slash-command-option'))
-            .filter(option => option.style.display !== 'none');
-            
-          if (visibleOptions.length === 1) {
-            // If only one option, autocomplete it
-            const command = visibleOptions[0].querySelector('b').textContent;
-            this.inputElement.value = command;
-            this.visibleInput.textContent = command;
-            
-            // Hide dropdown after autocomplete
-            this.slashCommandDropdown.style.display = 'none';
-          }
-        }
+        this.handleInputKeyDown(e);
       });
       
       // Add elements to container
@@ -472,7 +313,6 @@ class StreamingTerminalModule extends CanvasModule {
       canvasContainer.appendChild(this.inputElement);
       canvasContainer.appendChild(this.commandLine);
       canvasContainer.appendChild(this.statusIndicator);
-      canvasContainer.appendChild(this.slashCommandDropdown);
       
       this.directInputEnabled = true;
       
@@ -495,6 +335,113 @@ class StreamingTerminalModule extends CanvasModule {
     }
   }
   
+  /**
+   * Handle keyboard input events
+   * @param {KeyboardEvent} e - The keyboard event
+   */
+  handleInputKeyDown(e) {
+    // Handle Enter to process command
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const command = this.inputElement.value;
+      
+      // Hide slash command dropdown
+      this.slashCommandHandler.hideDropdown();
+      
+      if (command && command.trim()) {
+        // Add command to output history
+        this.terminalOutput.push(`${command}`);
+        
+        // Process the command
+        this.processCommand(command);
+        
+        // Add to command history
+        if (this.commandHistory.length === 0 || 
+            this.commandHistory[this.commandHistory.length - 1] !== command) {
+          this.commandHistory.push(command);
+          this.historyIndex = this.commandHistory.length;
+        }
+      }
+      
+      // Clear input
+      this.inputElement.value = '';
+      this.visibleInput.textContent = '';
+      
+      // Update display
+      this.render();
+      return;
+    }
+    
+    // Handle Backspace
+    if (e.key === 'Backspace') {
+      setTimeout(() => {
+        this.visibleInput.textContent = this.inputElement.value;
+        
+        // If the input is now just "/", show all commands
+        if (this.inputElement.value === '/') {
+          this.slashCommandHandler.showAllCommands();
+        } else if (this.inputElement.value.startsWith('/')) {
+          this.slashCommandHandler.filterDropdown(this.inputElement.value);
+        } else {
+          this.slashCommandHandler.hideDropdown();
+        }
+      }, 0);
+    }
+    
+    // Handle Escape to hide dropdown
+    if (e.key === 'Escape') {
+      this.slashCommandHandler.hideDropdown();
+    }
+    
+    // Handle Up arrow for command history
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (this.commandHistory.length > 0 && this.historyIndex > 0) {
+        this.historyIndex--;
+        const prevCmd = this.commandHistory[this.historyIndex];
+        this.inputElement.value = prevCmd;
+        this.visibleInput.textContent = prevCmd;
+        
+        // Hide dropdown when navigating history
+        this.slashCommandHandler.hideDropdown();
+      }
+      return;
+    }
+    
+    // Handle Down arrow for command history
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (this.historyIndex < this.commandHistory.length - 1) {
+        this.historyIndex++;
+        const nextCmd = this.commandHistory[this.historyIndex];
+        this.inputElement.value = nextCmd;
+        this.visibleInput.textContent = nextCmd;
+      } else {
+        this.historyIndex = this.commandHistory.length;
+        this.inputElement.value = '';
+        this.visibleInput.textContent = '';
+      }
+      
+      // Hide dropdown when navigating history
+      this.slashCommandHandler.hideDropdown();
+      return;
+    }
+    
+    // Tab to autocomplete slash command
+    if (e.key === 'Tab' && this.inputElement.value.startsWith('/')) {
+      e.preventDefault();
+      
+      const completion = this.slashCommandHandler.getAutocompletion(this.inputElement.value);
+      if (completion) {
+        this.inputElement.value = completion;
+        this.visibleInput.textContent = completion;
+        
+        // Hide dropdown after autocomplete
+        this.slashCommandHandler.hideDropdown();
+      }
+    }
+  }
+  
   disableDirectInput() {
     if (!this.directInputEnabled) return;
     try {
@@ -503,24 +450,26 @@ class StreamingTerminalModule extends CanvasModule {
         this.focusInterval = null;
       }
       
-      if (this.inputOverlay && this.inputOverlay.parentElement) {
-        this.inputOverlay.parentElement.removeChild(this.inputOverlay);
+      // Clean up slash command handler
+      if (this.slashCommandHandler) {
+        this.slashCommandHandler.destroy();
+        this.slashCommandHandler = null;
       }
-      if (this.inputElement && this.inputElement.parentElement) {
-        this.inputElement.parentElement.removeChild(this.inputElement);
-      }
-      if (this.statusIndicator && this.statusIndicator.parentElement) {
-        this.statusIndicator.parentElement.removeChild(this.statusIndicator);
-      }
-      if (this.commandLine && this.commandLine.parentElement) {
-        this.commandLine.parentElement.removeChild(this.commandLine);
-      }
-      if (this.outputContainer && this.outputContainer.parentElement) {
-        this.outputContainer.parentElement.removeChild(this.outputContainer);
-      }
-      if (this.slashCommandDropdown && this.slashCommandDropdown.parentElement) {
-        this.slashCommandDropdown.parentElement.removeChild(this.slashCommandDropdown);
-      }
+      
+      // Remove UI elements
+      const elementsToRemove = [
+        this.inputOverlay, 
+        this.inputElement, 
+        this.statusIndicator, 
+        this.commandLine, 
+        this.outputContainer
+      ];
+      
+      elementsToRemove.forEach(element => {
+        if (element && element.parentElement) {
+          element.parentElement.removeChild(element);
+        }
+      });
       
       this.inputOverlay = null;
       this.inputElement = null;
@@ -529,7 +478,6 @@ class StreamingTerminalModule extends CanvasModule {
       this.visibleInput = null;
       this.cursor = null;
       this.outputContainer = null;
-      this.slashCommandDropdown = null;
       
       this.directInputEnabled = false;
       console.log('Direct terminal input disabled');
@@ -543,7 +491,13 @@ class StreamingTerminalModule extends CanvasModule {
     
     // Check for slash commands first
     if (command.startsWith('/')) {
-      return this.processSlashCommand(command);
+      // Remove the slash and pass to slash command handler
+      const cmdWithoutSlash = command.slice(1);
+      if (this.slashCommandHandler.processCommand(command)) {
+        return true;
+      }
+      // If slash command handler didn't process it, continue with normal command processing
+      command = cmdWithoutSlash;
     }
     
     const parts = command.split(' ');
@@ -570,7 +524,6 @@ class StreamingTerminalModule extends CanvasModule {
         
       case 'clear':
         this.clearTerminal();
-        // No need to call render() as clearTerminal() now does this
         return true;
         
       case 'connect':
@@ -598,7 +551,7 @@ class StreamingTerminalModule extends CanvasModule {
         
       default:
         // If connected, treat any unrecognized command as data to send
-        if (this.connected && this.connection) {
+        if (this.wsHandler && this.wsHandler.isConnected()) {
           this.sendData(command);
         } else {
           this.terminalOutput.push(`Error: Unknown command: ${cmd}`);
@@ -610,59 +563,14 @@ class StreamingTerminalModule extends CanvasModule {
     
     // If user types / after a command, make sure we show all options
     if (this.inputElement && this.inputElement.value === '/') {
-      this.showFullSlashCommandDropdown();
-    }
-    
-    return true;
-  }
-  
-  processSlashCommand(command) {
-    // Remove the slash and parse the command
-    const commandText = command.slice(1);
-    const parts = commandText.split(' ');
-    const cmd = parts[0].toLowerCase();
-    const args = parts.slice(1);
-    
-    switch (cmd) {
-      case 'help':
-        this.processCommand('help');
-        break;
-        
-      case 'clear':
-        this.clearTerminal();
-        this.render();
-        break;
-        
-      case 'connect':
-        if (args.length > 0) {
-          this.connect(args[0]);
-        } else {
-          this.terminalOutput.push("Error: Please specify a WebSocket URL");
-          this.terminalOutput.push("Example: /connect wss://echo.websocket.org");
-        }
-        break;
-        
-      case 'disconnect':
-        this.disconnect();
-        break;
-        
-      default:
-        this.terminalOutput.push(`Error: Unknown slash command: /${cmd}`);
-        this.terminalOutput.push("Type '/help' for available slash commands");
-    }
-    
-    this.render();
-    
-    // If user types / after a command, make sure we show all options
-    if (this.inputElement && this.inputElement.value === '/') {
-      this.showFullSlashCommandDropdown();
+      this.slashCommandHandler.showAllCommands();
     }
     
     return true;
   }
   
   clearTerminal() {
-    console.log("Clearing terminal. Connected:", this.connected, "to", this.connection?._url);
+    console.log("Clearing terminal. Connected:", this.wsHandler?.isConnected());
     
     // Use the same initialization method to ensure consistency
     this.initializeTerminalOutput();
@@ -672,120 +580,36 @@ class StreamingTerminalModule extends CanvasModule {
   }
   
   connect(endpoint) {
-    if (this.connected) {
-      console.log('Already connected, disconnecting first');
-      this.disconnect();
-    }
+    // Add message to output - natural terminal style
+    this.terminalOutput.push(`Connecting to ${endpoint}...`);
+    this.render();
     
-    try {
-      // Add message to output - natural terminal style
-      this.terminalOutput.push(`Connecting to ${endpoint}...`);
-      this.render();
-      
-      this.connection = new WebSocket(endpoint);
-      this.updateStatus('connecting', 'Connecting...');
-      
-      this.connection.onopen = () => {
-        console.log('Connection established');
-        this.connected = true;
-        
-        // Add connection message to terminal output
-        this.terminalOutput.push(`Connected to ${endpoint}`);
-        
-        this.updateStatus('connected', 'Connected');
-        this.manager?.updateCanvasStatus('success', 'Connected');
-        if (this.inputElement && this.autoFocus !== false) {
-          this.inputElement.focus();
-        }
-        
-        this.render();
-      };
-      
-      this.connection.onmessage = (event) => {
-        console.log('WebSocket message received:', event.data);
-        
-        // Add received message directly to terminal output without labeling it
-        this.terminalOutput.push(`${event.data}`);
-        
-        // Force render update to display new message
-        this.render();
-      };
-      
-      this.connection.onclose = (event) => {
-        console.log('Connection closed', event);
-        this.connected = false;
-        this.connection = null;
-        
-        // Add disconnection message to terminal output
-        this.terminalOutput.push(`Disconnected from server`);
-        
-        this.updateStatus('disconnected', 'Disconnected');
-        this.manager?.updateCanvasStatus('info', 'Disconnected');
-        
-        this.render();
-      };
-      
-      this.connection.onerror = (error) => {
+    // Use the WebSocket handler to establish the connection
+    this.wsHandler.connect(endpoint)
+      .catch(error => {
         console.error('Connection error:', error);
-        
-        // Add error message to terminal output
-        this.terminalOutput.push(`Connection error`);
-        
-        this.updateStatus('error', 'Connection Error');
-        this.manager?.updateCanvasStatus('error', 'Connection error');
-        
+        this.terminalOutput.push(`Error connecting: ${error.message}`);
         this.render();
-      };
-      
-      return true;
-    } catch (error) {
-      console.error('Error connecting:', error);
-      
-      // Add error message to terminal output
-      this.terminalOutput.push(`Error connecting: ${error.message}`);
-      
-      this.updateStatus('error', `Error: ${error.message}`);
-      this.manager?.updateCanvasStatus('error', `Error: ${error.message}`);
-      
-      this.render();
-      return false;
-    }
+      });
   }
   
   disconnect() {
-    if (this.connection) {
-      this.connection.close();
-      this.connection = null;
-    }
-    
-    this.connected = false;
-    this.terminalOutput.push("Disconnected from server");
-    this.updateStatus('disconnected', 'Disconnected');
-    this.manager?.updateCanvasStatus('info', 'Disconnected');
-    this.render();
-    
-    return true;
+    return this.wsHandler.disconnect();
   }
   
   sendData(data) {
-    if (!this.connected || !this.connection) {
+    if (!this.wsHandler || !this.wsHandler.isConnected()) {
       this.terminalOutput.push("Error: Not connected to a server");
       this.render();
       return false;
     }
     
     try {
-      // Don't add sent message to terminal output for more natural experience
-      this.connection.send(data);
-      
-      this.render();
-      return true;
+      // Send data through WebSocket handler
+      return this.wsHandler.sendData(data);
     } catch (error) {
       console.error('Error sending data:', error);
-      
-      // Add error message to terminal output
       this.terminalOutput.push(`Error sending data: ${error.message}`);
-      
       this.render();
       return false;
     }
@@ -877,7 +701,7 @@ class StreamingTerminalModule extends CanvasModule {
         return true;
       default:
         // If connected, treat any unrecognized command as data to send
-        if (this.connected && this.connection) {
+        if (this.wsHandler && this.wsHandler.isConnected()) {
           const fullCommand = [command, ...args].join(' ');
           return this.sendData(fullCommand);
         } else {
