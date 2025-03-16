@@ -1,4 +1,4 @@
-<!-- index.html -->
+<!-- index.html (updated) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,12 +7,19 @@
     <title>Terminal Chat Canvas</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="styles/main.css">
+
+    <!-- chat styles -->
     <link rel="stylesheet" href="styles/chat.css">
     <link rel="stylesheet" href="styles/chat-code.css">
     <link rel="stylesheet" href="styles/chat-image.css">
+
+    <!-- module styles -->
     <link rel="stylesheet" href="styles/code.css">
     <link rel="stylesheet" href="styles/image-viewer.css">
     <link rel="stylesheet" href="styles/slash-command.css">
+
+    <!-- collapsible canvas styles -->
+    <link rel="stylesheet" href="styles/collapsible-canvas.css">
 </head>
 <body>
     <!-- Terminal effects -->
@@ -104,6 +111,7 @@ Try one of the suggestions below or type your own command!</div>
         
         <!-- Canvas side -->
         <div class="canvas-window">
+            <!-- This structure will be modified by the collapsible canvas manager -->
             <div class="canvas-titlebar">
                 <div class="canvas-title">
                     <i class="fas fa-desktop"></i>
@@ -143,7 +151,7 @@ Try one of the suggestions below or type your own command!</div>
     <div class="status-bar">
         <div class="status-item">
             <i class="fas fa-circle"></i>
-            <span>Terminal v1.0</span>
+            <span>Terminal v0.1</span>
         </div>
         <div class="status-item">
             <i class="fas fa-memory"></i>
@@ -155,10 +163,40 @@ Try one of the suggestions below or type your own command!</div>
         </div>
     </div>
     
-    <!-- Load base modules -->
+    <!-- Canvas tab context menu -->
+    <div id="canvasTabContextMenu" class="context-menu" style="display: none;">
+        <div class="context-menu-item" data-action="new">New Canvas</div>
+        <div class="context-menu-item" data-action="rename">Rename Canvas</div>
+        <div class="context-menu-item" data-action="minimize">Minimize Canvas</div>
+        <div class="context-menu-item" data-action="close">Close Canvas</div>
+        <div class="context-menu-separator"></div>
+        <div class="context-menu-item" data-action="closeOthers">Close Other Canvases</div>
+        <div class="context-menu-item" data-action="closeAll">Close All Canvases</div>
+    </div>
+    
+    <!-- Keyboard shortcut hints -->
+    <div class="keyboard-shortcut-hints">
+        <div class="keyboard-shortcut-hint"><kbd>Ctrl</kbd> + <kbd>T</kbd> New canvas</div>
+        <div class="keyboard-shortcut-hint"><kbd>Ctrl</kbd> + <kbd>W</kbd> Close canvas</div>
+        <div class="keyboard-shortcut-hint"><kbd>Ctrl</kbd> + <kbd>Tab</kbd> Switch canvas</div>
+        <div class="keyboard-shortcut-hint"><kbd>Double-click</kbd> Minimize canvas</div>
+    </div>
+    
+    <!-- Canvas modules -->
     <script src="js/canvas/modules/canvas-module.js"></script>
     <script src="js/canvas/modules/html-module.js"></script>
+
+    <!-- Canvas Manager -->
     <script src="js/canvas/canvas-manager.js"></script>
+
+    <!-- Collapsible Canvas Components (loaded in dependency order) -->
+    <script src="js/canvas/collapsible-canvas/canvas-dom-manager.js"></script>
+    <script src="js/canvas/collapsible-canvas/canvas-layout-manager.js"></script>
+    <script src="js/canvas/collapsible-canvas/canvas-tab-manager.js"></script>
+    <script src="js/canvas/collapsible-canvas/canvas-setup-manager.js"></script>
+
+    <!-- Core manager last -->
+    <script src="js/canvas/collapsible-canvas/collapsible-canvas-manager.js"></script>
 
     <!-- Slash Command -->
     <script src="js/canvas/slash-commands/slash-command-debug.js"></script>
@@ -169,6 +207,41 @@ Try one of the suggestions below or type your own command!</div>
     <script src="js/canvas/modules/shape-module.js"></script>
     <script src="js/canvas/modules/chart-module.js"></script>
 
+    <!-- Define updateImageModule before loading the image-module-slash-command-handler.js -->
+    <script>
+        // Define updateImageModule function
+        function updateImageModule(settings) {
+            // Get image module
+            const imageModule = window.Commands && window.Commands.canvasManager
+                ? window.Commands.canvasManager.getModule('image')
+                : null;
+            
+            if (!imageModule) {
+                console.error("Image module not found");
+                return;
+            }
+            
+            // Apply settings to image module
+            if (settings && settings.theme && typeof imageModule.setTheme === 'function') {
+                imageModule.setTheme(settings.theme);
+            }
+            
+            if (settings && settings.zoom && typeof imageModule.setZoom === 'function') {
+                imageModule.setZoom(settings.zoom);
+            }
+            
+            // Refresh the display if needed
+            if (typeof imageModule.refresh === 'function') {
+                imageModule.refresh();
+            }
+            
+            console.log("Image module updated with settings:", settings);
+        }
+
+        // Make it globally available
+        window.updateImageModule = updateImageModule;
+    </script>
+
     <!-- Image Module -->
     <script src="js/canvas/modules/image-module/image-module-slash-command-handler.js"></script>
     <script src="js/canvas/modules/image-module/html-image-module.js"></script>
@@ -178,7 +251,7 @@ Try one of the suggestions below or type your own command!</div>
     <script src="js/canvas/modules/code-module/code-module-commands.js"></script>
     <script src="js/canvas/modules/code-module/code-html-module.js"></script>
 
-     <!-- Markdown Module -->
+    <!-- Markdown Module -->
     <script src="js/canvas/modules/markdown-module.js"></script>
 
     <!-- Streaming Terminal module components -->
@@ -201,117 +274,10 @@ Try one of the suggestions below or type your own command!</div>
     <!-- Main initialization last -->
     <script src="js/main.js"></script>
     
-    <!-- Deferred terminal module initialization -->
-    <script>
-    // Terminal module initialization and repair
-    document.addEventListener('DOMContentLoaded', function() {
-        // Wait for everything to load
-        setTimeout(function() {
-            console.log("Running terminal module check and repair...");
-            if (window.Commands && window.Commands.canvasManager) {
-                const cm = window.Commands.canvasManager;
-                
-                // Check if terminal module exists
-                let terminalModule = cm.getModule('terminal');
-                if (!terminalModule) {
-                    console.warn("Terminal module not found in canvas manager - attempting to register");
-                    
-                    // Try to register terminal module if available
-                    if (typeof window.StreamingTerminalModule === 'function') {
-                        try {
-                            console.log("Creating StreamingTerminalModule instance");
-                            const newModule = new StreamingTerminalModule();
-                            console.log("Registering terminal module with canvas manager");
-                            cm.registerModule('terminal', newModule);
-                            terminalModule = newModule;
-                            console.log("Terminal module registered successfully");
-                        } catch (e) {
-                            console.error("Failed to create and register terminal module:", e);
-                        }
-                    } else {
-                        console.error("StreamingTerminalModule not available as a global class");
-                    }
-                } else {
-                    console.log("Terminal module found in canvas manager");
-                }
-                
-                // Add terminal debug function
-                window.debugTerminalModule = function() {
-                    console.log("=== TERMINAL MODULE DEBUG ===");
-                    
-                    // Check if StreamingTerminalModule is defined
-                    console.log("StreamingTerminalModule defined globally:", 
-                        typeof window.StreamingTerminalModule === 'function');
-                    
-                    // Check canvas manager
-                    if (!window.Commands || !window.Commands.canvasManager) {
-                        console.error("Canvas Manager not available");
-                        return;
-                    }
-                    
-                    const cm = window.Commands.canvasManager;
-                    console.log("Available modules:", Object.keys(cm.modules || {}));
-                    
-                    // Check terminal module
-                    const terminalModule = cm.getModule('terminal');
-                    if (!terminalModule) {
-                        console.error("Terminal module not found in canvas manager");
-                        return;
-                    }
-                    
-                    console.log("Terminal module properties:", Object.getOwnPropertyNames(terminalModule));
-                    console.log("Terminal module connected:", terminalModule.connected);
-                    
-                    // Test the module with basic connect function
-                    console.log("Testing terminal module connect function:");
-                    if (typeof terminalModule.connect === 'function') {
-                        console.log("connect() method exists on terminal module");
-                    } else {
-                        console.error("connect() method missing from terminal module");
-                    }
-                    
-                    // Test WASM integration
-                    console.log("Testing WASM integration:");
-                    if (terminalModule.wasmBridge) {
-                        console.log("WASM bridge exists");
-                        console.log("WASM exports available:", !!terminalModule.wasmBridge.wasmExports);
-                    } else {
-                        console.warn("WASM bridge not found - terminal is using pure JavaScript");
-                    }
-                };
-                
-                // Update command suggestions
-                const suggestionsContainer = document.getElementById('command-suggestions');
-                if (suggestionsContainer) {
-                    let hasTerminalSuggestion = false;
-                    
-                    // Check if terminal suggestion already exists
-                    Array.from(suggestionsContainer.children).forEach(child => {
-                        if (child.textContent.includes('terminal')) {
-                            hasTerminalSuggestion = true;
-                        }
-                    });
-                    
-                    // Add terminal suggestion if not present
-                    if (!hasTerminalSuggestion && terminalModule) {
-                        const terminalSuggestion = document.createElement('span');
-                        terminalSuggestion.className = 'command-suggestion';
-                        terminalSuggestion.innerHTML = '<i class="fas fa-terminal"></i> connect terminal';
-                        suggestionsContainer.appendChild(terminalSuggestion);
-                        
-                        // Add event listener
-                        terminalSuggestion.addEventListener('click', () => {
-                            const chatInput = document.getElementById('chat-input');
-                            if (chatInput) {
-                                chatInput.value = 'connect terminal';
-                                chatInput.focus();
-                            }
-                        });
-                    }
-                }
-            }
-        }, 1000); // One second delay to ensure WASM has time to load
-    });
-    </script>
+    <!-- Terminal initialization script -->
+    <script src="js/terminal-initialization.js"></script>
+    
+    <!-- Canvas tab context menu script -->
+    <script src="js/canvas/canvas-tab-context-menu.js"></script>
 </body>
 </html>

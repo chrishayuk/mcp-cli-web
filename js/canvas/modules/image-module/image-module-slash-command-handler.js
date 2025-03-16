@@ -26,11 +26,6 @@ function initImageModuleSlashCommands() {
     // Register module-specific commands (only available when image module is active)
     registerImageModuleCommands();
     
-    // Register module update function (called when image module becomes active)
-    window.updateImageModule = function() {
-        extendImageModuleWithSlashSupport();
-    };
-    
     console.log("Image module slash commands initialized");
 }
 
@@ -210,7 +205,51 @@ function extendImageModuleWithSlashSupport() {
     imageModule._slashCommandsExtended = true;
 }
 
-// Export module update function for the slash commands system
-if (typeof window !== 'undefined') {
-    window.updateImageModule = updateImageModule;
+// The updateImageModule function is now defined globally before this script loads
+// Use it to extend the image module with slash command support
+if (typeof window.updateImageModule === 'function') {
+    // Replace the function dynamically
+    const originalUpdateImageModule = window.updateImageModule;
+    
+    window.updateImageModule = function(settings) {
+        // Call the original function with settings
+        if (settings) {
+            originalUpdateImageModule(settings);
+        }
+        
+        // Also extend the module with slash commands
+        extendImageModuleWithSlashSupport();
+    };
+} else {
+    // Define the function if it doesn't exist yet
+    window.updateImageModule = function(settings) {
+        // Get image module
+        const imageModule = window.Commands && window.Commands.canvasManager
+            ? window.Commands.canvasManager.getModule('image')
+            : null;
+        
+        if (!imageModule) {
+            console.error("Image module not found");
+            return;
+        }
+        
+        // Apply settings to image module
+        if (settings && settings.theme && typeof imageModule.setTheme === 'function') {
+            imageModule.setTheme(settings.theme);
+        }
+        
+        if (settings && settings.zoom && typeof imageModule.setZoom === 'function') {
+            imageModule.setZoom(settings.zoom);
+        }
+        
+        // Refresh the display if needed
+        if (typeof imageModule.refresh === 'function') {
+            imageModule.refresh();
+        }
+        
+        // Extend with slash commands
+        extendImageModuleWithSlashSupport();
+        
+        console.log("Image module updated with settings:", settings);
+    };
 }
