@@ -355,6 +355,8 @@ class StreamingTerminalModule extends CanvasModule {
           this.terminalOutput.push("  connect URL - Connect to WebSocket server");
           this.terminalOutput.push("  disconnect  - Disconnect from server");
           this.terminalOutput.push("  send <msg>  - Send a message to the server");
+          this.terminalOutput.push("");
+          this.terminalOutput.push("When connected, you can type any text to send it directly to the server.");
           break;
           
         case 'clear':
@@ -385,8 +387,13 @@ class StreamingTerminalModule extends CanvasModule {
           break;
           
         default:
-          this.terminalOutput.push(`Error: Unknown command: ${cmd}`);
-          this.terminalOutput.push("Type 'help' for available commands");
+          // If connected, treat any unrecognized command as data to send
+          if (this.connected && this.connection) {
+            this.sendData(command);
+          } else {
+            this.terminalOutput.push(`Error: Unknown command: ${cmd}`);
+            this.terminalOutput.push("Type 'help' for available commands");
+          }
       }
       
       this.render();
@@ -599,10 +606,16 @@ class StreamingTerminalModule extends CanvasModule {
           this.processCommand('help');
           return true;
         default:
-          this.terminalOutput.push(`Error: Unknown command: ${command}`);
-          this.terminalOutput.push("Type 'help' for available commands");
-          this.render();
-          return false;
+          // If connected, treat any unrecognized command as data to send
+          if (this.connected && this.connection) {
+            const fullCommand = [command, ...args].join(' ');
+            return this.sendData(fullCommand);
+          } else {
+            this.terminalOutput.push(`Error: Unknown command: ${command}`);
+            this.terminalOutput.push("Type 'help' for available commands");
+            this.render();
+            return false;
+          }
       }
     }
   }
