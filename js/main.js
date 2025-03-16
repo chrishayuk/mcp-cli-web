@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log("Registering standard modules...");
             
             // Create modules with titles
-            const imageModule = new ImageModule();
+            const imageModule = new HtmlImageModule();
             const chartModule = new ChartModule();
             const codeModule = new CodeModule();
             const shapeModule = new ShapeModule();

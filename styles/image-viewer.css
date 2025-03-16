@@ -1,0 +1,307 @@
+/**
+ * styles/image-viewer.css
+ * CSS Styles for the Enhanced HTML Image Module
+ */
+
+/* Container for the entire image viewer */
+.image-viewer-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--bg-terminal);
+    color: var(--text-green);
+    font-family: var(--font-mono);
+    overflow: hidden;
+}
+
+/* Main UI container */
+.image-viewer-ui {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+/* Header section with info and controls */
+.image-viewer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.3rem 0.5rem;
+    background-color: var(--bg-panel);
+    border-bottom: 1px solid var(--border-color);
+    height: 30px;
+}
+
+/* Image title and information section */
+.image-info {
+    display: flex;
+    align-items: center;
+    font-size: 0.85rem;
+}
+
+.image-title {
+    color: var(--text-header);
+    font-weight: bold;
+}
+
+/* Controls section */
+.image-controls {
+    display: flex;
+    gap: 10px;
+}
+
+.zoom-controls, .additional-controls {
+    display: flex;
+    gap: 5px;
+}
+
+/* Main image viewing area */
+.image-viewing-area {
+    flex: 1;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    background-color: rgba(0, 0, 0, 0.4);
+}
+
+/* Image placeholder */
+.image-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    font-size: 0.9rem;
+    color: var(--text-dim);
+    text-align: center;
+}
+
+.image-placeholder i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.image-placeholder p {
+    margin: 0.3rem 0;
+}
+
+/* Loading state icon animation */
+.image-placeholder .fa-spinner {
+    animation: spin 1.5s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Main image container */
+.main-image-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+/* The displayed image */
+.displayed-image {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    transition: transform 0.2s ease;
+}
+
+/* Footer with metadata */
+.image-viewer-footer {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.3rem 0.5rem;
+    background-color: var(--bg-panel);
+    border-top: 1px solid var(--border-color);
+    font-size: 0.75rem;
+    color: var(--text-dim);
+}
+
+.image-url {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 70%;
+}
+
+.image-metadata {
+    text-align: right;
+}
+
+/* Image info panel */
+.image-info-panel {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    width: 80%;
+    max-width: 500px;
+    z-index: 10;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+}
+
+.info-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+    background-color: rgba(0, 0, 0, 0.3);
+}
+
+.info-header h3 {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--text-header);
+}
+
+.info-content {
+    padding: 1rem;
+    font-size: 0.85rem;
+}
+
+.info-content p {
+    margin: 0.5rem 0;
+}
+
+.info-content a {
+    color: var(--text-header);
+    text-decoration: none;
+    word-break: break-all;
+}
+
+.info-content a:hover {
+    text-decoration: underline;
+}
+
+/* Terminal buttons */
+.image-viewer-container .terminal-button {
+    background-color: var(--bg-panel);
+    color: var(--text-green);
+    border: 1px solid var(--border-color);
+    border-radius: 2px;
+    padding: 0.15rem 0.3rem;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.image-viewer-container .terminal-button:hover {
+    background-color: var(--border-color);
+    color: var(--text-header);
+}
+
+.image-viewer-container .terminal-button:active {
+    transform: translateY(1px);
+}
+
+/* Terminal scanline effect */
+.viewer-scanlines {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        to bottom,
+        rgba(18, 16, 16, 0) 50%,
+        rgba(0, 0, 0, 0.25) 50%
+    );
+    background-size: 100% 4px;
+    z-index: 2;
+    pointer-events: none;
+    opacity: 0.15;
+}
+
+/* Light theme */
+.image-viewer-container.light-theme {
+    background-color: #f5f5f5;
+    color: #333;
+}
+
+.image-viewer-container.light-theme .image-viewer-header,
+.image-viewer-container.light-theme .image-viewer-footer,
+.image-viewer-container.light-theme .info-header {
+    background-color: #e0e0e0;
+    border-color: #ccc;
+}
+
+.image-viewer-container.light-theme .image-title {
+    color: #2c3e50;
+}
+
+.image-viewer-container.light-theme .image-viewing-area {
+    background-color: #fff;
+}
+
+.image-viewer-container.light-theme .terminal-button {
+    background-color: #e0e0e0;
+    color: #333;
+    border-color: #ccc;
+}
+
+.image-viewer-container.light-theme .terminal-button:hover {
+    background-color: #d0d0d0;
+    color: #000;
+}
+
+.image-viewer-container.light-theme .image-info-panel {
+    background-color: #f0f0f0;
+    border-color: #ccc;
+}
+
+.image-viewer-container.light-theme .viewer-scanlines {
+    opacity: 0.05;
+}
+
+/* Dark theme is the default */
+.image-viewer-container.dark-theme {
+    /* These are already defined in the base styles */
+}
+
+/* Loading state */
+.image-viewing-area.loading .displayed-image {
+    opacity: 0.5;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .image-controls {
+        gap: 5px;
+    }
+    
+    .additional-controls {
+        display: none;
+    }
+    
+    .image-viewer-footer {
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    .image-url, .image-metadata {
+        max-width: 100%;
+        text-align: left;
+    }
+}
