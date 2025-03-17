@@ -1,9 +1,9 @@
 /**
- * main.css styling
+ * chat.css styling
  * 
- * Chat Specific styles for chat ui
+ * Chat Specific styles for chat ui with terminal enhancements
  */
-.terminal-chat {
+ .terminal-chat {
     display: flex;
     flex-direction: column;
     height: 100%;
@@ -56,6 +56,16 @@
     border: 1px solid var(--text-header);
 }
 
+/* AI Avatar styling */
+.ai-avatar {
+    background-color: rgba(20, 40, 80, 0.4) !important;
+    border: 1px solid rgba(0, 150, 200, 0.4);
+}
+
+.ai-avatar i {
+    color: #0CF;
+}
+
 .message-content {
     background-color: rgba(0, 0, 0, 0.5);
     padding: 0.75rem;
@@ -75,10 +85,45 @@
     border-top-left-radius: 0;
 }
 
+/* Add terminal-style prompts to messages */
+.ai-avatar + .message-content .message-text::before {
+    content: "assistant $ ";
+    color: #0CF;
+    font-weight: bold;
+    opacity: 0.7;
+    font-family: var(--font-mono);
+}
+
+.system-avatar + .message-content .message-text::before {
+    content: "system $ ";
+    color: #0F0;
+    font-weight: bold;
+    opacity: 0.7;
+    font-family: var(--font-mono);
+}
+
+.user-avatar + .message-content .message-text::before {
+    content: "user $ ";
+    color: #FF0;
+    font-weight: bold;
+    opacity: 0.7;
+    font-family: var(--font-mono);
+}
+
 .message-text {
     font-size: 0.9rem;
     white-space: pre-wrap;
     word-break: break-word;
+}
+
+/* Style code blocks in messages */
+.message-text code {
+    background-color: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(0, 255, 0, 0.2);
+    border-radius: 3px;
+    padding: 0.1rem 0.3rem;
+    font-family: var(--font-mono);
+    color: #0FF;
 }
 
 .message-time {
@@ -88,11 +133,23 @@
 }
 
 .chat-input-container {
+    position: relative;
     display: flex;
     align-items: center;
     padding: 0.75rem;
     border-top: 1px solid var(--border-color);
     background-color: rgba(0, 0, 0, 0.2);
+}
+
+/* Prefix for chat input - like a shell prompt */
+.chat-input-container::before {
+    content: "$ ";
+    color: var(--text-green, #0FFF0F);
+    display: flex;
+    align-items: center;
+    padding-right: 6px;
+    font-family: var(--font-mono);
+    opacity: 0.8;
 }
 
 .chat-input {
@@ -112,6 +169,21 @@
 .chat-input:focus {
     outline: none;
     border-color: var(--text-green);
+}
+
+/* Terminal cursor styling */
+.terminal-input-cursor {
+    display: inline-block;
+    width: 8px;
+    height: 16px;
+    background-color: var(--cursor-color, #0FFF0F);
+    margin-left: 2px;
+    animation: blink-cursor 1s infinite;
+    vertical-align: middle;
+    position: absolute;
+    bottom: 14px;
+    right: 40px;
+    pointer-events: none;
 }
 
 .chat-send {
@@ -144,10 +216,13 @@
     cursor: pointer;
     display: inline-block;
     color: var(--text-header);
+    font-family: var(--font-mono);
+    transition: all 0.2s ease;
 }
 
 .command-suggestion:hover {
-    background-color: rgba(0, 255, 255, 0.1);
+    background-color: rgba(0, 255, 0, 0.1);
+    border-color: var(--text-green, #0FFF0F);
 }
 
 .command-suggestions {
@@ -162,6 +237,14 @@
     gap: 0.5rem;
     color: var(--text-dim);
     font-style: italic;
+    font-family: var(--font-mono);
+}
+
+/* Terminal processing indicator */
+.terminal-processing {
+    color: var(--text-dim, #00BB00);
+    font-family: var(--font-mono);
+    margin-right: 8px;
 }
 
 .thinking-dots {
@@ -171,10 +254,9 @@
 
 .thinking-dot {
     width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background-color: var(--text-dim);
-    animation: pulse 1.5s infinite;
+    height: 12px;
+    background-color: var(--text-green, #0FFF0F);
+    animation: blink-cursor 1s infinite;
 }
 
 .thinking-dot:nth-child(2) {
@@ -185,6 +267,64 @@
     animation-delay: 0.4s;
 }
 
+/* Terminal-style welcome messages */
+.terminal-welcome {
+    font-family: var(--font-mono);
+    color: var(--text-green);
+    line-height: 1.4;
+}
+
+.terminal-welcome-prompt {
+    color: #0F0;
+    font-weight: bold;
+}
+
+.terminal-welcome-cmd {
+    color: #0FF;
+}
+
+.terminal-welcome-output {
+    margin-top: 0.5rem;
+    margin-left: 0.5rem;
+}
+
+.terminal-welcome-line {
+    margin-bottom: 0.25rem;
+}
+
+.term-bright {
+    color: #FFF;
+    font-weight: bold;
+}
+
+.term-cmd {
+    background-color: rgba(0, 255, 0, 0.1);
+    border: 1px solid rgba(0, 255, 0, 0.2);
+    border-radius: 3px;
+    padding: 0.1rem 0.3rem;
+    cursor: pointer;
+    color: #0FF;
+}
+
+.term-cmd:hover {
+    background-color: rgba(0, 255, 0, 0.2);
+}
+
+.term-indent {
+    padding-left: 1rem;
+}
+
+/* Blinking cursor animation */
+@keyframes blink-cursor {
+    0%, 49% {
+        opacity: 1;
+    }
+    50%, 100% {
+        opacity: 0;
+    }
+}
+
+/* Original pulse animation */
 @keyframes pulse {
     0%, 100% { opacity: 0.3; }
     50% { opacity: 1; }

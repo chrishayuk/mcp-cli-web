@@ -58,36 +58,7 @@
 
         <div class="terminal-chat">
           <div class="chat-messages" id="chat-messages">
-            <!-- System welcome message -->
-            <div class="chat-message system-message">
-              <div class="message-avatar system-avatar">
-                <i class="fas fa-desktop"></i>
-              </div>
-              <div class="message-content system-content">
-                <div class="message-text">Welcome to Canvas Terminal with OpenAI Integration! I can help you visualize data and images.</div>
-                <div class="message-time">Just now</div>
-              </div>
-            </div>
-
-            <!-- System help message -->
-            <div class="chat-message system-message">
-              <div class="message-avatar system-avatar">
-                <i class="fas fa-desktop"></i>
-              </div>
-              <div class="message-content system-content">
-                <div class="message-text">
-                  I can:
-                  <br />- Show images with "show image [url]"
-                  <br />- Create charts with "chart [type]"
-                  <br />- Display code with syntax highlighting
-                  <br />- Draw patterns and shapes
-                  <br />- Connect to terminals
-                  <br />- Chat with AI (Use /ai key to set up)
-                  <br /><br />Try one of the suggestions below or type / to see all commands!
-                </div>
-                <div class="message-time">Just now</div>
-              </div>
-            </div>
+            <!-- Welcome messages removed -->
           </div>
 
           <!-- Command suggestions -->
@@ -255,8 +226,11 @@
   <script src="js/terminal.js"></script>
   <script src="js/commands.js"></script>
 
-  <!-- Chat Interface and Handlers -->
+  <!-- Chat Interface and Handlers (modular structure) -->
   <script src="js/chat/chat-interface.js"></script>
+  <script src="js/chat/chat-module-handlers.js"></script>
+  <script src="js/chat/chat-command-handlers.js"></script>
+  <script src="js/chat/chat-debug-utils.js"></script>
   <script src="js/chat/chat-code-handler.js"></script>
   <script src="js/chat/chat-code-tester.js"></script>
   <script src="js/chat/chat-image-handler.js"></script>
