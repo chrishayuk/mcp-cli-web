@@ -1,6 +1,6 @@
 /**
  * js/canvas/commands.js
- * Command processor for the Terminal Canvas
+ * Enhanced Command Processor for Terminal Canvas with AI Support
  */
 class CommandProcessor {
     constructor(canvasManager) {
@@ -12,6 +12,54 @@ class CommandProcessor {
             'shape': ['draw', 'random', 'pattern', 'animate', 'stop'],
             'markdown': ['render', 'load', 'scroll', 'theme'],
             'terminal': ['connect', 'disconnect', 'send', 'clear', 'resize']
+        };
+        
+        // Command patterns for AI response parsing
+        this.commandPatterns = {
+            // Image commands
+            image: [
+                { regex: /show\s+(?:random\s+)?image(?:\s+from)?\s+(\S+)/i, action: 'showImageUrl' },
+                { regex: /show\s+(?:a\s+)?random\s+image/i, action: 'showRandomImage' },
+                { regex: /display\s+(?:this\s+)?image(?:\s+from)?\s+(\S+)/i, action: 'showImageUrl' }
+            ],
+            
+            // Chart commands
+            chart: [
+                { regex: /(?:create|show|make|display)\s+(?:a\s+)?(bar|pie|line|scatter|area|radar|bubble)\s+chart/i, action: 'createChart' },
+                { regex: /chart\s+(bar|pie|line|scatter|area|radar|bubble)/i, action: 'createChart' }
+            ],
+            
+            // Code commands
+            code: [
+                { regex: /```(?:js|javascript|python|java|html|css|cpp|csharp|c\+\+|c#|ruby|php|go|swift|kotlin|typescript|tsx|rust|sql|bash|shell|powershell)\n([\s\S]+?)```/i, action: 'showCodeBlock' },
+                { regex: /show\s+(?:this\s+)?code(?:[:]\s*|\s+)([\s\S]+)/i, action: 'showCode' },
+                { regex: /display\s+(?:this\s+)?code(?:[:]\s*|\s+)([\s\S]+)/i, action: 'showCode' }
+            ],
+            
+            // Markdown commands
+            markdown: [
+                { regex: /show\s+(?:this\s+)?markdown(?:[:]\s*|\s+)([\s\S]+)/i, action: 'renderMarkdown' },
+                { regex: /render\s+(?:this\s+)?markdown(?:[:]\s*|\s+)([\s\S]+)/i, action: 'renderMarkdown' },
+                { regex: /display\s+(?:this\s+)?markdown(?:[:]\s*|\s+)([\s\S]+)/i, action: 'renderMarkdown' }
+            ],
+            
+            // Shape/pattern commands
+            shape: [
+                { regex: /draw\s+(?:a\s+)?(pattern|shape|random)/i, action: 'drawPattern' },
+                { regex: /create\s+(?:a\s+)?(pattern|shape)/i, action: 'drawPattern' }
+            ],
+            
+            // Terminal commands
+            terminal: [
+                { regex: /connect\s+(?:to\s+)?terminal(?:\s+at)?\s+(\S+)/i, action: 'connectTerminal' },
+                { regex: /send\s+(?:to\s+)?terminal(?:[:]\s*|\s+)([\s\S]+)/i, action: 'sendToTerminal' },
+                { regex: /disconnect\s+(?:from\s+)?terminal/i, action: 'disconnectTerminal' }
+            ],
+            
+            // Canvas commands
+            canvas: [
+                { regex: /clear\s+(?:the\s+)?canvas/i, action: 'clearCanvas' }
+            ]
         };
     }
     
@@ -425,5 +473,328 @@ ${commands.join('\n')}
 Use 'module ${moduleName}' to activate this module first.
 `);
         return true;
+    }
+    
+    // ============================================================================
+    // AI COMMAND PARSING FUNCTIONALITY
+    // ============================================================================
+    
+    /**
+     * Parse an AI response for executable commands
+     * @param {string} response - The AI response text to parse
+     * @returns {Array} Array of command objects
+     */
+    parseAIResponse(response) {
+        const commands = [];
+        
+        // Iterate through all command categories
+        for (const [category, patterns] of Object.entries(this.commandPatterns)) {
+            // Check each pattern in the category
+            for (const pattern of patterns) {
+                const matches = [...response.matchAll(new RegExp(pattern.regex, 'g'))];
+                
+                // Extract all matching commands
+                for (const match of matches) {
+                    commands.push({
+                        category,
+                        action: pattern.action,
+                        params: match.slice(1), // All capturing groups
+                        originalText: match[0]
+                    });
+                }
+            }
+        }
+        
+        return commands;
+    }
+    
+    /**
+     * Execute all commands found in an AI response
+     * @param {string} response - The AI response text
+     * @returns {Promise<Array>} Results of command execution
+     */
+    async executeAICommands(response) {
+        // Extract commands from response
+        const commands = this.parseAIResponse(response);
+        
+        // If no commands found, just return empty array
+        if (commands.length === 0) {
+            return [];
+        }
+        
+        // Execute all commands with a delay between them
+        const results = [];
+        const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+        
+        for (const command of commands) {
+            // Small delay between commands for better UX
+            await delay(300);
+            
+            // Execute the command
+            const result = await this.executeAICommand(command);
+            results.push(result);
+        }
+        
+        return results;
+    }
+    
+    /**
+     * Execute a single command extracted from an AI response
+     * @param {Object} command - Command object
+     * @returns {Promise<Object>} Execution result
+     */
+    async executeAICommand(command) {
+        console.log('Executing AI command:', command);
+        
+        try {
+            // Switch based on category and action
+            switch (command.category) {
+                case 'image':
+                    return this.executeImageCommand(command);
+                    
+                case 'chart':
+                    return this.executeChartCommand(command);
+                    
+                case 'code':
+                    return this.executeCodeCommand(command);
+                    
+                case 'markdown':
+                    return this.executeMarkdownCommand(command);
+                    
+                case 'shape':
+                    return this.executeShapeCommand(command);
+                    
+                case 'terminal':
+                    return this.executeTerminalCommand(command);
+                    
+                case 'canvas':
+                    return this.executeCanvasCommand(command);
+                    
+                default:
+                    throw new Error(`Unknown command category: ${command.category}`);
+            }
+        } catch (error) {
+            console.error('Error executing AI command:', error);
+            return {
+                success: false,
+                command,
+                error: error.message || 'Unknown error'
+            };
+        }
+    }
+    
+    /**
+     * Execute image commands from AI response
+     * @param {Object} command - Image command
+     * @returns {Object} Execution result
+     */
+    executeImageCommand(command) {
+        this.canvasManager.activateModule('image');
+        
+        switch (command.action) {
+            case 'showImageUrl':
+                const url = command.params[0];
+                this.canvasManager.executeCommand('display', url);
+                return {
+                    success: true,
+                    command,
+                    message: `Displayed image from ${url}`
+                };
+                
+            case 'showRandomImage':
+                this.canvasManager.executeCommand('random');
+                return {
+                    success: true,
+                    command,
+                    message: 'Displayed random image'
+                };
+                
+            default:
+                throw new Error(`Unknown image action: ${command.action}`);
+        }
+    }
+    
+    /**
+     * Execute chart commands from AI response
+     * @param {Object} command - Chart command
+     * @returns {Object} Execution result
+     */
+    executeChartCommand(command) {
+        this.canvasManager.activateModule('chart');
+        
+        switch (command.action) {
+            case 'createChart':
+                const chartType = command.params[0].toLowerCase();
+                this.canvasManager.executeCommand(chartType);
+                
+                return {
+                    success: true,
+                    command,
+                    message: `Created ${chartType} chart`
+                };
+                
+            default:
+                throw new Error(`Unknown chart action: ${command.action}`);
+        }
+    }
+    
+    /**
+     * Execute code commands from AI response
+     * @param {Object} command - Code command
+     * @returns {Object} Execution result
+     */
+    executeCodeCommand(command) {
+        this.canvasManager.activateModule('code');
+        
+        switch (command.action) {
+            case 'showCodeBlock':
+            case 'showCode':
+                const code = command.params[0].trim();
+                this.canvasManager.executeCommand('display', code);
+                
+                return {
+                    success: true,
+                    command,
+                    message: 'Displayed code with syntax highlighting'
+                };
+                
+            default:
+                throw new Error(`Unknown code action: ${command.action}`);
+        }
+    }
+    
+    /**
+     * Execute markdown commands from AI response
+     * @param {Object} command - Markdown command
+     * @returns {Object} Execution result
+     */
+    executeMarkdownCommand(command) {
+        this.canvasManager.activateModule('markdown');
+        
+        switch (command.action) {
+            case 'renderMarkdown':
+                const markdown = command.params[0].trim();
+                this.canvasManager.executeCommand('render', markdown);
+                
+                return {
+                    success: true,
+                    command,
+                    message: 'Rendered markdown content'
+                };
+                
+            default:
+                throw new Error(`Unknown markdown action: ${command.action}`);
+        }
+    }
+    
+    /**
+     * Execute shape commands from AI response
+     * @param {Object} command - Shape command
+     * @returns {Object} Execution result
+     */
+    executeShapeCommand(command) {
+        this.canvasManager.activateModule('shape');
+        
+        switch (command.action) {
+            case 'drawPattern':
+                const pattern = command.params[0].toLowerCase();
+                // If random or pattern, use it; otherwise default to 'pattern'
+                const patternType = (pattern === 'random') ? 'random' : 'pattern';
+                this.canvasManager.executeCommand(patternType);
+                
+                return {
+                    success: true,
+                    command,
+                    message: `Drew ${patternType} shape`
+                };
+                
+            default:
+                throw new Error(`Unknown shape action: ${command.action}`);
+        }
+    }
+    
+    /**
+     * Execute terminal commands from AI response
+     * @param {Object} command - Terminal command
+     * @returns {Object} Execution result
+     */
+    executeTerminalCommand(command) {
+        this.canvasManager.activateModule('terminal');
+        
+        switch (command.action) {
+            case 'connectTerminal':
+                const url = command.params[0];
+                this.canvasManager.executeCommand('connect', url);
+                
+                return {
+                    success: true,
+                    command,
+                    message: `Connected to terminal at ${url}`
+                };
+                
+            case 'sendToTerminal':
+                const data = command.params[0];
+                this.canvasManager.executeCommand('send', data);
+                
+                return {
+                    success: true,
+                    command,
+                    message: `Sent data to terminal: ${data}`
+                };
+                
+            case 'disconnectTerminal':
+                this.canvasManager.executeCommand('disconnect');
+                
+                return {
+                    success: true,
+                    command,
+                    message: 'Disconnected from terminal'
+                };
+                
+            default:
+                throw new Error(`Unknown terminal action: ${command.action}`);
+        }
+    }
+    
+    /**
+     * Execute canvas commands from AI response
+     * @param {Object} command - Canvas command
+     * @returns {Object} Execution result
+     */
+    executeCanvasCommand(command) {
+        switch (command.action) {
+            case 'clearCanvas':
+                this.canvasManager.clearCanvas();
+                
+                return {
+                    success: true,
+                    command,
+                    message: 'Cleared canvas'
+                };
+                
+            default:
+                throw new Error(`Unknown canvas action: ${command.action}`);
+        }
+    }
+    
+    /**
+     * Extract code blocks from an AI response
+     * @param {string} response - AI response text
+     * @returns {Array} Array of code block objects
+     */
+    extractCodeBlocks(response) {
+        const codeBlocks = [];
+        const codeRegex = /```(?:([\w\+\#]+)\n)?([\s\S]+?)```/g;
+        
+        let match;
+        while ((match = codeRegex.exec(response)) !== null) {
+            codeBlocks.push({
+                language: match[1] || 'text',
+                code: match[2],
+                fullMatch: match[0]
+            });
+        }
+        
+        return codeBlocks;
     }
 }

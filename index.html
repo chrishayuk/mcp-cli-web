@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Terminal Chat Canvas</title>
+  <title>Terminal Chat Canvas with OpenAI</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
   <link rel="stylesheet" href="styles/main.css" />
 
@@ -16,6 +16,7 @@
   <link rel="stylesheet" href="styles/code.css" />
   <link rel="stylesheet" href="styles/image-viewer.css" />
   <link rel="stylesheet" href="styles/slash-command.css" />
+  <link rel="stylesheet" href="styles/ai-slash-commands.css" />
 
   <!-- collapsible canvas styles -->
   <link rel="stylesheet" href="styles/collapsible-canvas.css" />
@@ -63,7 +64,7 @@
                 <i class="fas fa-desktop"></i>
               </div>
               <div class="message-content system-content">
-                <div class="message-text">Welcome to Canvas Terminal! I can help you visualize data and images.</div>
+                <div class="message-text">Welcome to Canvas Terminal with OpenAI Integration! I can help you visualize data and images.</div>
                 <div class="message-time">Just now</div>
               </div>
             </div>
@@ -81,7 +82,8 @@
                   <br />- Display code with syntax highlighting
                   <br />- Draw patterns and shapes
                   <br />- Connect to terminals
-                  <br /><br />Try one of the suggestions below or type your own command!
+                  <br />- Chat with AI (Use /ai key to set up)
+                  <br /><br />Try one of the suggestions below or type / to see all commands!
                 </div>
                 <div class="message-time">Just now</div>
               </div>
@@ -93,9 +95,7 @@
             <span class="command-suggestion">show random image</span>
             <span class="command-suggestion">chart pie</span>
             <span class="command-suggestion">draw pattern</span>
-            <span class="command-suggestion">display code</span>
-            <span class="command-suggestion">connect terminal</span>
-            <span class="command-suggestion">help</span>
+            <span class="command-suggestion">/help</span>
           </div>
 
           <!-- Chat input -->
@@ -151,7 +151,7 @@
   <div class="status-bar">
     <div class="status-item">
       <i class="fas fa-circle"></i>
-      <span>Terminal v0.1</span>
+      <span>Terminal v0.2</span>
     </div>
     <div class="status-item">
       <i class="fas fa-memory"></i>
@@ -199,11 +199,10 @@
   <!-- Tab Activation Handler should be moved here -->
    <script src="js/canvas/collapsible-canvas/canvas-tab-activation-handler.js"></script>
 
-
   <!-- Slash Command -->
-  <script src="js/canvas/slash-commands/slash-command-debug.js"></script>
-  <script src="js/canvas/slash-commands/slash-command-module-activation.js"></script>
-  <script src="js/canvas/slash-commands/slash-command-handler.js"></script>
+  <script src="js/slash-commands/slash-command-debug.js"></script>
+  <script src="js/slash-commands/slash-command-module-activation.js"></script>
+  <script src="js/slash-commands/slash-command-handler.js"></script>
 
   <!-- Visualization Modules -->
   <script src="js/canvas/modules/shape-module.js"></script>
@@ -262,6 +261,10 @@
   <script src="js/chat/chat-code-tester.js"></script>
   <script src="js/chat/chat-image-handler.js"></script>
   <script src="js/chat/chat-image-tester.js"></script>
+
+  <!-- OpenAI Integration -->
+  <script src="js/chat/openai-integration.js"></script>
+  <script src="js/slash-commands/ai-slash-command-handler.js"></script>
 
   <!-- Main Initialization -->
   <script src="js/main.js"></script>

@@ -1,0 +1,178 @@
+/**
+ * styles/ai-slash-commands.css
+ * Styles for AI slash commands and prompts
+ */
+
+/* Input prompts */
+.ai-input-prompt {
+    background-color: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    padding: 16px;
+    margin-top: 10px;
+  }
+  
+  .prompt-title {
+    font-weight: bold;
+    color: #58a6ff;
+    margin-bottom: 8px;
+    font-size: 1.1em;
+  }
+  
+  .prompt-desc {
+    color: #8b949e;
+    margin-bottom: 14px;
+    font-size: 0.9em;
+  }
+  
+  .prompt-input {
+    width: 100%;
+    background-color: #161b22;
+    border: 1px solid #30363d;
+    color: #c9d1d9;
+    padding: 8px 10px;
+    border-radius: 4px;
+    font-family: monospace;
+    margin-bottom: 14px;
+  }
+  
+  .prompt-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+  
+  .prompt-button {
+    padding: 6px 12px;
+    background-color: #21262d;
+    border: 1px solid #30363d;
+    border-radius: 4px;
+    color: #c9d1d9;
+    cursor: pointer;
+    font-size: 0.9em;
+  }
+  
+  .prompt-button:hover {
+    background-color: #30363d;
+  }
+  
+  .prompt-button.primary {
+    background-color: #238636;
+    border-color: #238636;
+  }
+  
+  .prompt-button.primary:hover {
+    background-color: #2ea043;
+  }
+  
+  /* Radio group styles */
+  .prompt-radio-group {
+    margin-bottom: 14px;
+  }
+  
+  .prompt-radio {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+    cursor: pointer;
+  }
+  
+  .prompt-radio input {
+    margin-right: 8px;
+  }
+  
+  /* Settings display */
+  .ai-settings-display {
+    background-color: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    padding: 16px;
+    margin-top: 10px;
+  }
+  
+  .settings-title {
+    font-weight: bold;
+    color: #58a6ff;
+    margin-bottom: 16px;
+    font-size: 1.1em;
+  }
+  
+  .settings-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  .settings-table tr:not(:last-child) td {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .settings-table td {
+    padding: 8px 4px;
+  }
+  
+  .settings-table td:first-child {
+    font-weight: bold;
+    width: 30%;
+  }
+  
+  /* Help display */
+  .ai-help-display {
+    background-color: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    padding: 16px;
+    margin-top: 10px;
+  }
+  
+  .help-title {
+    font-weight: bold;
+    color: #58a6ff;
+    margin-bottom: 16px;
+    font-size: 1.1em;
+  }
+  
+  .help-section {
+    margin-bottom: 16px;
+  }
+  
+  .help-subtitle {
+    color: #d2a8ff;
+    margin-bottom: 8px;
+    font-weight: bold;
+  }
+  
+  .command-list {
+    margin-left: 8px;
+  }
+  
+  .command-item {
+    display: flex;
+    margin-bottom: 6px;
+  }
+  
+  .command-item .command {
+    font-family: monospace;
+    background-color: rgba(99, 110, 123, 0.1);
+    padding: 2px 4px;
+    border-radius: 4px;
+    margin-right: 8px;
+    min-width: 130px;
+  }
+  
+  .help-footer {
+    margin-top: 16px;
+    color: #8b949e;
+    font-style: italic;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 12px;
+  }
+  
+  /* Command example in messages */
+  .slash-command-example {
+    font-family: monospace;
+    background-color: rgba(99, 110, 123, 0.4);
+    padding: 2px 5px;
+    border-radius: 4px;
+    margin-right: 4px;
+    display: inline-block;
+  }
