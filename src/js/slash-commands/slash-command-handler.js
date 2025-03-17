@@ -391,6 +391,7 @@ function setupSlashCommandUI() {
     
     /**
      * Apply the selected slash command to the input
+     * REPLACE the existing function in your slash-command-handler.js file with this one
      * @param {string} command - The command to apply
      * @param {boolean} execute - Whether to execute the command
      */
@@ -401,6 +402,7 @@ function setupSlashCommandUI() {
         }
         
         const availableCommands = window.SlashCommands.getAvailableCommands();
+        const chatInput = document.getElementById('chat-input');
         
         // Handle module activation commands
         const moduleCommand = window.SlashCommands.getModuleCommandByName(command);
@@ -419,6 +421,11 @@ function setupSlashCommandUI() {
                     // Execute the command
                     chatInput.value = fullCommand;
                     
+                    // Direct execution
+                    if (window.Commands && typeof window.Commands.processCommand === 'function') {
+                        window.Commands.processCommand(fullCommand);
+                    }
+                    
                     // Trigger send
                     const sendButton = document.getElementById('chat-send');
                     if (sendButton) {
@@ -435,9 +442,16 @@ function setupSlashCommandUI() {
         else if (availableCommands[command]) {
             if (execute) {
                 // For Enter key, execute the command directly
-                chatInput.value = availableCommands[command];
+                const fullCommand = availableCommands[command];
+                chatInput.value = fullCommand;
                 
-                // Trigger send
+                // Execute via Commands processor
+                if (window.Commands && typeof window.Commands.processCommand === 'function') {
+                    console.log("Executing command via processor:", fullCommand);
+                    window.Commands.processCommand(fullCommand);
+                }
+                
+                // Also trigger send button
                 const sendButton = document.getElementById('chat-send');
                 if (sendButton) {
                     sendButton.click();
@@ -450,18 +464,19 @@ function setupSlashCommandUI() {
         }
         
         // Hide dropdown and reset state after applying
-        autocompleteDropdown.style.display = 'none';
+        const dropdown = document.querySelector('.slash-command-autocomplete');
+        if (dropdown) dropdown.style.display = 'none';
+        
+        // Reset state
         isSlashCommandActive = false;
-        chatInput.classList.remove('slash-active');
+        if (chatInput) chatInput.classList.remove('slash-active');
     }
     
     /**
-     * The corrected showAutocompleteSuggestions function to properly position the dropdown
-     * Replace this function in your slash-command-handler.js file
+     * The fixed showAutocompleteSuggestions function to properly position the dropdown
+     * REPLACE the existing function in your slash-command-handler.js file with this one
      */
     function showAutocompleteSuggestions(text) {
-        console.log("showAutocompleteSuggestions called with:", text);
-        
         // Check if SlashCommands exists
         if (!window.SlashCommands) {
             console.error("SlashCommands not initialized");
@@ -477,8 +492,6 @@ function setupSlashCommandUI() {
             return;
         }
         
-        console.log("Elements found - dropdown:", dropdown, "chatInput:", chatInput);
-        
         // Extract slash command
         const parts = text.split(' ');
         const slashCommand = parts[0].toLowerCase();
@@ -486,8 +499,6 @@ function setupSlashCommandUI() {
         // Get available commands and descriptions
         const availableCommands = window.SlashCommands.getAvailableCommands();
         const availableDescriptions = window.SlashCommands.getAvailableDescriptions();
-        
-        console.log("Available commands:", availableCommands);
         
         // Find matching commands
         const matches = [];
@@ -497,14 +508,11 @@ function setupSlashCommandUI() {
             }
         }
         
-        console.log("Matching commands:", matches);
-        
         // Clear current suggestions
         dropdown.innerHTML = '';
         
         // No matches, show nothing or "no commands found"
         if (matches.length === 0) {
-            console.log("No matches found, hiding dropdown");
             dropdown.style.display = 'none';
             return;
         }
@@ -555,42 +563,31 @@ function setupSlashCommandUI() {
         
         // Get the position of the input element
         const rect = chatInput.getBoundingClientRect();
-        console.log("Input position rect:", rect);
         
-        // ALTERNATIVE SOLUTION: Append dropdown to body instead of chat input container
-        // This can help avoid positioning constraints from parent containers
-        document.body.appendChild(dropdown);
-        
-        // Force visible styles with !important for testing
-        // Near the end of the function, replace the styling with:
-        dropdown.style.cssText = `
-        position: fixed !important;
-        top: 50% !important;
-        left: 50% !important;
-        transform: translate(-50%, -50%) !important;
-        width: 300px !important;
-        max-height: 400px !important;
-        margin: 0 !important;
-        display: block !important;
-        z-index: 99999 !important;
-        background-color: red !important; /* Very visible color */
-        color: white !important;
-        border: 5px solid yellow !important; /* Very visible border */
-        padding: 20px !important;
-        font-size: 16px !important;
-        opacity: 1 !important;
-        visibility: visible !important;
-        pointer-events: auto !important;
-        `;
-        
-        // Add test content if dropdown is empty
-        if (dropdown.children.length === 0) {
-            dropdown.innerHTML = '<div style="padding:10px;">TEST DROPDOWN CONTENT</div>';
+        // Move dropdown to body if not already there
+        if (dropdown.parentNode !== document.body) {
+            document.body.appendChild(dropdown);
         }
         
-        console.log("Dropdown styling applied:", dropdown.style.cssText);
-        console.log("Dropdown visibility:", window.getComputedStyle(dropdown).display);
-        console.log("Dropdown positioned at: top=" + dropdown.style.top + ", left=" + dropdown.style.left);
+        // Position dropdown BELOW the input with fixed positioning
+        dropdown.style.cssText = `
+            position: fixed !important;
+            top: ${rect.bottom + 5}px !important;
+            left: ${rect.left}px !important;
+            width: ${rect.width}px !important;
+            background: #1a1a1a !important;
+            border: 1px solid #444 !important;
+            border-radius: 4px !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5) !important;
+            max-height: 300px !important;
+            overflow-y: auto !important;
+            z-index: 10000 !important;
+            transform: none !important;
+            margin: 0 !important;
+            display: block !important;
+        `;
+        
+        console.log(`Showing dropdown with ${matches.length} commands at position: top=${rect.bottom + 5}px, left=${rect.left}px`);
     }
 }
 
@@ -899,3 +896,4 @@ window.debugSlashCommands = function() {
     
     console.log("=== END SLASH COMMANDS DEBUG ===");
 };
+
