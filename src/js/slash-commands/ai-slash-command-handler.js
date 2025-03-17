@@ -1,6 +1,6 @@
 /**
  * js/slash-commands/ai-slash-command-handler.js
- * AI Module Slash Command Handler
+ * AI Module Slash Command Handler - Fixed Version
  * 
  * Registers slash commands for OpenAI integration.
  * Provides AI configuration and conversation management through slash commands.
@@ -13,6 +13,20 @@ document.addEventListener('DOMContentLoaded', function() {
         if (window.SlashCommands && window.openAIService) {
             console.log("Initializing AI slash commands...");
             initAIModuleSlashCommands();
+            
+            // Check if API key exists in localStorage and validate it
+            if (window.openAIService.apiKey) {
+                console.log("OpenAI API key found in localStorage");
+                const isValid = window.openAIService.validateApiKey();
+                if (isValid) {
+                    console.log("API key is valid");
+                    if (window.ChatInterface) {
+                        window.ChatInterface.apiKeySet = true;
+                    }
+                } else {
+                    console.warn("Stored API key is invalid");
+                }
+            }
         }
     }, 1200);
 });
@@ -104,6 +118,8 @@ function hookSlashCommandExecution() {
     const chatInput = document.getElementById('chat-input');
     const chatSend = document.getElementById('chat-send');
     if (chatInput && chatSend) {
+        const originalKeydownHandler = chatInput.onkeydown;
+        
         chatInput.addEventListener('keydown', function(e) {
             if (e.key === 'Enter' && !e.shiftKey) {
                 const text = chatInput.value.trim();
@@ -354,11 +370,32 @@ function handleApiKeyCommand(apiKey) {
         showSystemMessage('⚠️ OpenAI service not initialized.');
         return;
     }
+    
+    console.log('[DEBUG] handleApiKeyCommand called with:', apiKey.substring(0,6) + '...');
+    
+    // First, ensure the API key is properly set in the OpenAIService instance
     const result = window.openAIService.setApiKey(apiKey);
+    
     if (result) {
+        // Update ChatInterface to reflect the key is set
         if (window.ChatInterface) {
             window.ChatInterface.apiKeySet = true;
         }
+        
+        // Double-check localStorage was updated
+        try {
+            const storedKey = localStorage.getItem('canvas_openai_api_key');
+            console.log('[DEBUG] Verified key in localStorage:', storedKey ? (storedKey.substring(0,6) + '...') : 'Not found');
+            
+            // If not found in localStorage despite successful set, manually save it
+            if (!storedKey) {
+                localStorage.setItem('canvas_openai_api_key', apiKey);
+                console.log('[DEBUG] Manually saved API key to localStorage');
+            }
+        } catch (e) {
+            console.warn('[DEBUG] Error verifying localStorage:', e);
+        }
+        
         showSystemMessage('✅ API key set successfully! Your key is stored in your browser.');
     } else {
         showSystemMessage('⚠️ Invalid API key format. Please provide a valid key starting with "sk-".');
@@ -512,6 +549,8 @@ window.debugAISlashCommands = function() {
         console.log("OpenAI Service Found:");
         console.log("  Model:", window.openAIService.model);
         console.log("  API Key Set:", !!window.openAIService.apiKey);
+        console.log("  API Key Valid:", window.openAIService.validateApiKey());
+        console.log("  API Key in localStorage:", !!localStorage.getItem('canvas_openai_api_key'));
         console.log("  API Endpoint:", window.openAIService.apiEndpoint);
         console.log("  Message History:", window.openAIService.messageHistory.length, "messages");
     } else {
@@ -530,5 +569,11 @@ window.debugAISlashCommands = function() {
     } else {
         console.error("Slash Commands system not found");
     }
+    
+    if (window.ChatInterface) {
+        console.log("\nChatInterface Status:");
+        console.log("  apiKeySet:", window.ChatInterface.apiKeySet);
+    }
+    
     console.log("=== END AI SLASH COMMANDS DEBUG ===");
 };

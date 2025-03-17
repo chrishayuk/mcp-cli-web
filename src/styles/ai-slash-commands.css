@@ -1,0 +1,549 @@
+/**
+ * styles/ai-slash-commands.css
+ * Styles for AI slash commands, prompts, and status indicators
+ */
+
+/* ===== EXISTING CSS ===== */
+
+/* Input prompts */
+.ai-input-prompt {
+  background-color: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  padding: 16px;
+  margin-top: 10px;
+}
+
+.prompt-title {
+  font-weight: bold;
+  color: #58a6ff;
+  margin-bottom: 8px;
+  font-size: 1.1em;
+}
+
+.prompt-desc {
+  color: #8b949e;
+  margin-bottom: 14px;
+  font-size: 0.9em;
+}
+
+.prompt-input {
+  width: 100%;
+  background-color: #161b22;
+  border: 1px solid #30363d;
+  color: #c9d1d9;
+  padding: 8px 10px;
+  border-radius: 4px;
+  font-family: monospace;
+  margin-bottom: 14px;
+}
+
+.prompt-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.prompt-button {
+  padding: 6px 12px;
+  background-color: #21262d;
+  border: 1px solid #30363d;
+  border-radius: 4px;
+  color: #c9d1d9;
+  cursor: pointer;
+  font-size: 0.9em;
+}
+
+.prompt-button:hover {
+  background-color: #30363d;
+}
+
+.prompt-button.primary {
+  background-color: #238636;
+  border-color: #238636;
+}
+
+.prompt-button.primary:hover {
+  background-color: #2ea043;
+}
+
+/* Radio group styles */
+.prompt-radio-group {
+  margin-bottom: 14px;
+}
+
+.prompt-radio {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+
+.prompt-radio input {
+  margin-right: 8px;
+}
+
+/* Settings display */
+.ai-settings-display {
+  background-color: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  padding: 16px;
+  margin-top: 10px;
+}
+
+.settings-title {
+  font-weight: bold;
+  color: #58a6ff;
+  margin-bottom: 16px;
+  font-size: 1.1em;
+}
+
+.settings-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.settings-table tr:not(:last-child) td {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.settings-table td {
+  padding: 8px 4px;
+}
+
+.settings-table td:first-child {
+  font-weight: bold;
+  width: 30%;
+}
+
+/* Help display */
+.ai-help-display {
+  background-color: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  padding: 16px;
+  margin-top: 10px;
+}
+
+.help-title {
+  font-weight: bold;
+  color: #58a6ff;
+  margin-bottom: 16px;
+  font-size: 1.1em;
+}
+
+.help-section {
+  margin-bottom: 16px;
+}
+
+.help-subtitle {
+  color: #d2a8ff;
+  margin-bottom: 8px;
+  font-weight: bold;
+}
+
+.command-list {
+  margin-left: 8px;
+}
+
+.command-item {
+  display: flex;
+  margin-bottom: 6px;
+}
+
+.command-item .command {
+  font-family: monospace;
+  background-color: rgba(99, 110, 123, 0.1);
+  padding: 2px 4px;
+  border-radius: 4px;
+  margin-right: 8px;
+  min-width: 130px;
+}
+
+.help-footer {
+  margin-top: 16px;
+  color: #8b949e;
+  font-style: italic;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 12px;
+}
+
+/* Command example in messages */
+.slash-command-example {
+  font-family: monospace;
+  background-color: rgba(99, 110, 123, 0.4);
+  padding: 2px 5px;
+  border-radius: 4px;
+  margin-right: 4px;
+  display: inline-block;
+}
+
+/* ===== NEW STYLES ===== */
+
+/* Welcome message containers */
+.ai-welcome {
+  margin: 10px 0;
+  padding: 15px;
+  border-radius: 6px;
+  background-color: #0d1117;
+  border: 1px solid #30363d;
+  border-left: 4px solid #4a90e2;
+  transition: all 0.3s ease;
+}
+
+/* Returning user welcome style */
+.ai-welcome.returning-user {
+  border-left-color: #238636;
+}
+
+/* New user welcome style */
+.ai-welcome.new-user {
+  border-left-color: #db6d28;
+}
+
+/* Welcome message heading */
+.ai-welcome h3 {
+  margin-top: 0;
+  color: #58a6ff;
+  font-size: 1.2rem;
+  font-weight: 500;
+}
+
+/* Code styling in welcome messages */
+.ai-welcome code {
+  background-color: #161b22;
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-family: monospace;
+  color: #58a6ff;
+  font-size: 0.9rem;
+}
+
+/* List styling in welcome messages */
+.ai-welcome ul, .ai-welcome ol {
+  padding-left: 25px;
+  margin: 10px 0;
+}
+
+.ai-welcome li {
+  margin-bottom: 5px;
+  line-height: 1.5;
+}
+
+/* Tip box styling */
+.welcome-tip {
+  padding: 10px;
+  background-color: rgba(46, 160, 67, 0.1);
+  border-radius: 5px;
+  margin: 10px 0;
+  font-size: 0.9rem;
+}
+
+.welcome-tip i {
+  color: #ffdf5d;
+  margin-right: 5px;
+}
+
+/* Command examples section */
+.command-examples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 10px 0;
+}
+
+/* Individual command example styling */
+.example-command {
+  background-color: #161b22;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+  font-family: monospace;
+  user-select: none;
+}
+
+.example-command:hover {
+  background-color: #21262d;
+  color: #58a6ff;
+  transform: translateY(-1px);
+}
+
+.example-command:active {
+  transform: translateY(1px);
+}
+
+/* AI avatar styling */
+.ai-avatar {
+  background-color: #2d1c41 !important;
+}
+
+.ai-avatar i {
+  color: #a371f7;
+}
+
+/* Links in welcome messages */
+.ai-welcome a {
+  color: #58a6ff;
+  text-decoration: none;
+  border-bottom: 1px dashed #58a6ff;
+}
+
+.ai-welcome a:hover {
+  color: #79c0ff;
+  border-bottom: 1px solid #79c0ff;
+}
+
+/* AI Status indicator in status bar */
+#ai-status-item {
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  height: 100%;
+  transition: all 0.3s ease;
+}
+
+#ai-status-item i {
+  margin-right: 6px;
+  transition: color 0.3s ease;
+}
+
+/* Connected state */
+#ai-status-item.status-connected {
+  color: #56d364;
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+#ai-status-item.status-connected i {
+  color: #56d364;
+}
+
+/* Disconnected state */
+#ai-status-item.status-disconnected {
+  color: #f78166;
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+#ai-status-item.status-disconnected i {
+  color: #f78166;
+}
+
+/* Hover effect */
+#ai-status-item:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+}
+
+/* Additional animation for status change */
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+#ai-status-item.status-updated i {
+  animation: pulse 0.5s ease;
+}
+
+/* AI Status popup container */
+.ai-status-popup {
+  background-color: #0d1117;
+  border-radius: 6px;
+  border: 1px solid #30363d;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+/* Not connected style */
+.ai-status-popup.not-connected {
+  border-left: 4px solid #f78166;
+}
+
+/* Popup header */
+.popup-header {
+  background-color: #161b22;
+  padding: 12px 15px;
+  border-bottom: 1px solid #30363d;
+  display: flex;
+  align-items: center;
+}
+
+.popup-header i {
+  margin-right: 10px;
+  color: #56d364;
+  font-size: 1.2rem;
+}
+
+.ai-status-popup.not-connected .popup-header i {
+  color: #f78166;
+}
+
+.popup-header span {
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: #c9d1d9;
+}
+
+/* Popup content */
+.popup-content {
+  padding: 15px;
+}
+
+/* Status table in popup */
+.status-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.status-table td {
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(100, 100, 120, 0.2);
+}
+
+.status-table tr:last-child td {
+  border-bottom: none;
+}
+
+.status-table td:first-child {
+  font-weight: 500;
+  color: #8b949e;
+  width: 40%;
+}
+
+.status-table td:last-child {
+  color: #c9d1d9;
+}
+
+/* Styles for the endpoint cell with long text */
+.endpoint-cell {
+  max-width: 250px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Status badge */
+.status-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 3px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.status-badge.connected {
+  background-color: rgba(46, 160, 67, 0.1);
+  color: #56d364;
+}
+
+.status-badge.disconnected {
+  background-color: rgba(248, 81, 73, 0.1);
+  color: #f78166;
+}
+
+/* Popup actions */
+.popup-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding: 12px 15px;
+  background-color: #161b22;
+  border-top: 1px solid #30363d;
+  gap: 10px;
+}
+
+/* Action buttons */
+.popup-action {
+  padding: 6px 12px;
+  border-radius: 4px;
+  border: 1px solid #30363d;
+  background-color: #21262d;
+  color: #c9d1d9;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+}
+
+.popup-action:hover {
+  background-color: #30363d;
+  transform: translateY(-1px);
+}
+
+.popup-action:active {
+  transform: translateY(1px);
+}
+
+.popup-action.change-model {
+  background-color: #1f6feb;
+  border-color: #1f6feb;
+}
+
+.popup-action.change-model:hover {
+  background-color: #388bfd;
+}
+
+.popup-action.clear-history {
+  background-color: #da3633;
+  border-color: #da3633;
+}
+
+.popup-action.clear-history:hover {
+  background-color: #f85149;
+}
+
+.popup-action.enter-key {
+  background-color: #238636;
+  border-color: #238636;
+}
+
+.popup-action.enter-key:hover {
+  background-color: #2ea043;
+}
+
+/* Instructions in popup */
+.ai-status-popup ol, .ai-status-popup ul {
+  padding-left: 25px;
+  margin: 10px 0;
+  color: #c9d1d9;
+}
+
+.ai-status-popup li {
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
+.ai-status-popup code {
+  background-color: #161b22;
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-family: monospace;
+  color: #58a6ff;
+  font-size: 0.9rem;
+}
+
+.ai-status-popup a {
+  color: #58a6ff;
+  text-decoration: none;
+  border-bottom: 1px dashed #58a6ff;
+}
+
+.ai-status-popup a:hover {
+  color: #79c0ff;
+  border-bottom: 1px solid #79c0ff;
+}
+
+/* Responsive adjustments */
+@media (max-width: 576px) {
+  .popup-actions {
+    flex-wrap: wrap;
+  }
+  
+  .popup-action {
+    flex: 1;
+    text-align: center;
+    min-width: 80px;
+  }
+}
