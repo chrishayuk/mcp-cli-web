@@ -73,24 +73,6 @@ window.AppInit = {
         
         // Set flag to prevent multiple triggers
         this._readyTriggered = true;
-        
-        // Add welcome message to chat interface
-        if (window.ChatInterface) {
-          setTimeout(() => {
-            window.ChatInterface.addSystemMessage(`
-              <div class="welcome-message">
-                <h3>Terminal Canvas Ready!</h3>
-                <p>Try these commands to get started:</p>
-                <ul>
-                  <li><code>show random image</code> - Display a random image</li>
-                  <li><code>chart pie</code> - Create a pie chart</li>
-                  <li><code>draw pattern</code> - Draw a geometric pattern</li>
-                  <li><code>/help</code> - Show available commands</li>
-                </ul>
-              </div>
-            `);
-          }, 500);
-        }
       }
     }
   };

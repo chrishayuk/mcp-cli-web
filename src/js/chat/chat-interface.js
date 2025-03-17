@@ -22,6 +22,9 @@ document.addEventListener('DOMContentLoaded', function() {
             // Add a terminal cursor effect to the chat input
             this.setupTerminalCursor();
             
+            // Setup slash command key handling
+            this.setupSlashCommandHandling();
+            
             console.log('Terminal chat interface initialized');
             return true;
         },
@@ -68,6 +71,103 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         },
         
+        // Setup slash command handling - this fixes the slash key issues
+        setupSlashCommandHandling: function() {
+            console.log("Setting up slash command key handling...");
+            
+            // Add a direct keypress listener to handle slash command
+            this.chatInput.addEventListener('keypress', (e) => {
+                // Check for slash key press when input is empty
+                if (e.key === '/' && this.chatInput.value === '') {
+                    console.log("Slash key detected, activating slash command UI");
+                    
+                    // Let the key get added to the input naturally
+                    setTimeout(() => {
+                        // Then trigger the input event to show autocomplete
+                        const inputEvent = new Event('input', { bubbles: true });
+                        this.chatInput.dispatchEvent(inputEvent);
+                        
+                        // Also check if autocomplete didn't show up
+                        setTimeout(() => {
+                            const dropdown = document.querySelector('.slash-command-autocomplete');
+                            if (dropdown && dropdown.style.display === 'none' && window.SlashCommands) {
+                                console.log("Forcing autocomplete dropdown to display");
+                                
+                                // Force the dropdown to show
+                                dropdown.style.display = 'block';
+                                
+                                // Position dropdown correctly
+                                const rect = this.chatInput.getBoundingClientRect();
+                                dropdown.style.top = `${rect.top - 10}px`;
+                                dropdown.style.left = `${rect.left}px`;
+                                dropdown.style.width = `${rect.width}px`;
+                                
+                                // Fill dropdown with commands if empty
+                                if (dropdown.children.length === 0 && window.SlashCommands) {
+                                    // Get available commands
+                                    const availableCommands = window.SlashCommands.getAvailableCommands();
+                                    const availableDescriptions = window.SlashCommands.getAvailableDescriptions();
+                                    
+                                    // Add commands to dropdown
+                                    for (const cmd in availableCommands) {
+                                        if (cmd.startsWith('/')) {
+                                            const item = document.createElement('div');
+                                            item.className = 'slash-command-item';
+                                            item.dataset.command = cmd;
+                                            item.innerHTML = `
+                                                <span class="slash-command-name">${cmd}</span>
+                                                <span class="slash-command-desc">${availableDescriptions[cmd] || ''}</span>
+                                            `;
+                                            dropdown.appendChild(item);
+                                        }
+                                    }
+                                }
+                            }
+                        }, 50);
+                    }, 10);
+                }
+            });
+            
+            // Also ensure the slash button works
+            const slashButton = document.querySelector('.slash-command-button');
+            if (slashButton) {
+                // Remove existing event listeners by cloning
+                const newSlashButton = slashButton.cloneNode(true);
+                slashButton.parentNode.replaceChild(newSlashButton, slashButton);
+                
+                // Add new event listener
+                newSlashButton.addEventListener('click', () => {
+                    this.chatInput.value = '/';
+                    this.chatInput.focus();
+                    
+                    // Trigger input event manually
+                    const inputEvent = new Event('input', { bubbles: true });
+                    this.chatInput.dispatchEvent(inputEvent);
+                    
+                    // Also ensure dropdown is shown
+                    setTimeout(() => {
+                        const dropdown = document.querySelector('.slash-command-autocomplete');
+                        if (dropdown && window.SlashCommands) {
+                            dropdown.style.display = 'block';
+                            
+                            // Position dropdown correctly
+                            const rect = this.chatInput.getBoundingClientRect();
+                            dropdown.style.top = `${rect.top - 10}px`;
+                            dropdown.style.left = `${rect.left}px`;
+                            dropdown.style.width = `${rect.width}px`;
+                            
+                            // Force showing help if function available
+                            if (typeof showSlashCommandHelp === 'function') {
+                                showSlashCommandHelp();
+                            }
+                        }
+                    }, 50);
+                });
+            }
+            
+            console.log("Slash command key handling setup complete");
+        },
+        
         // Add tab completion for common commands
         handleTabCompletion: function() {
             const input = this.chatInput.value.toLowerCase().trim();
@@ -98,6 +198,21 @@ document.addEventListener('DOMContentLoaded', function() {
             for (const [prefix, completion] of Object.entries(commandPrefixes)) {
                 if (input === prefix || input.startsWith(prefix + ' ')) {
                     this.chatInput.value = input.replace(prefix, completion);
+                    return;
+                }
+            }
+            
+            // If we get here and input starts with /, try to find slash command completions
+            if (input.startsWith('/') && window.SlashCommands) {
+                const availableCommands = window.SlashCommands.getAvailableCommands();
+                
+                // Find commands that start with the current input
+                const matchingCommands = Object.keys(availableCommands).filter(cmd => 
+                    cmd.startsWith(input) && cmd !== input);
+                
+                // If we have matches, use the first one
+                if (matchingCommands.length > 0) {
+                    this.chatInput.value = matchingCommands[0] + ' ';
                     return;
                 }
             }
@@ -249,4 +364,22 @@ document.addEventListener('DOMContentLoaded', function() {
     setTimeout(() => {
         ChatInterface.init();
     }, 100);
+    
+    // Add a function to fix slash commands that can be called from console if needed
+    window.fixSlashCommandInput = function() {
+        console.log("Attempting to fix slash command input handling...");
+        
+        // Get input element
+        const chatInput = document.getElementById('chat-input');
+        if (!chatInput) {
+            console.error("Chat input not found");
+            return false;
+        }
+        
+        // Force reapply the slash command handling
+        ChatInterface.setupSlashCommandHandling();
+        
+        console.log("Slash command handling fixed");
+        return true;
+    };
 });

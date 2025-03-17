@@ -14,8 +14,7 @@
     overflow-y: auto;
     z-index: 1000;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-    transform: translateY(-100%);
-    margin-top: -8px;
+    /* Remove any transform or negative margins */
     animation: glow 1.5s infinite alternate;
     font-family: 'Courier New', monospace;
 }
