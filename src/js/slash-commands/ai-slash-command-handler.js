@@ -8,10 +8,19 @@
 
 // Initialize when document is loaded
 document.addEventListener('DOMContentLoaded', function() {
-    // Wait for both the SlashCommands system and OpenAI service to be initialized
-    setTimeout(function() {
+    // Prevent duplicate initialization
+    if (window.aiSlashCommandsInitialized) {
+        console.log("AI slash commands already initialized, skipping");
+        return;
+    }
+    
+    // Set initialization flag
+    window.aiSlashCommandsInitialized = true;
+    
+    // Check for dependencies with improved error handling
+    const checkDependencies = function() {
         if (window.SlashCommands && window.openAIService) {
-            console.log("Initializing AI slash commands...");
+            console.log("Dependencies for AI slash commands available");
             initAIModuleSlashCommands();
             
             // Check if API key exists in localStorage and validate it
@@ -27,69 +36,188 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.warn("Stored API key is invalid");
                 }
             }
+            return true;
         }
-    }, 1200);
+        
+        // Log specific missing dependencies
+        if (!window.SlashCommands) {
+            console.warn("SlashCommands system not available yet");
+        }
+        if (!window.openAIService) {
+            console.warn("OpenAI service not available yet");
+        }
+        
+        return false;
+    };
+    
+    // Try immediately, then with increasing delays
+    if (!checkDependencies()) {
+        setTimeout(function() {
+            if (!checkDependencies()) {
+                setTimeout(function() {
+                    if (!checkDependencies()) {
+                        console.error("Dependencies for AI slash commands not available after multiple attempts");
+                        
+                        // Last resort - try to initialize OpenAI service if available
+                        if (window.SlashCommands && !window.openAIService) {
+                            console.log("Attempting to register AI commands without full OpenAI service...");
+                            window.openAIService = window.openAIService || {
+                                apiKey: null,
+                                apiEndpoint: "https://api.openai.com/v1",
+                                model: "gpt-4o",
+                                messageHistory: [],
+                                validateApiKey: function() { return !!this.apiKey; },
+                                setApiKey: function(key) {
+                                    if (key && key.startsWith('sk-')) {
+                                        this.apiKey = key;
+                                        try {
+                                            localStorage.setItem('canvas_openai_api_key', key);
+                                        } catch(e) { 
+                                            console.error("Failed to save API key to localStorage:", e);
+                                        }
+                                        return true;
+                                    }
+                                    return false;
+                                },
+                                setApiEndpoint: function(endpoint) {
+                                    if (endpoint && (endpoint.startsWith('http://') || endpoint.startsWith('https://'))) {
+                                        this.apiEndpoint = endpoint;
+                                        return true;
+                                    }
+                                    return false;
+                                },
+                                resetApiEndpoint: function() {
+                                    this.apiEndpoint = "https://api.openai.com/v1";
+                                    return true;
+                                },
+                                setModel: function(model) {
+                                    const validModels = ['gpt-4o', 'gpt-4o-mini', 'gpt-3.5-turbo'];
+                                    if (validModels.includes(model)) {
+                                        this.model = model;
+                                        return true;
+                                    }
+                                    return false;
+                                },
+                                resetConversation: function() {
+                                    this.messageHistory = [];
+                                    return true;
+                                },
+                                getSettings: function() {
+                                    return {
+                                        model: this.model,
+                                        apiKeySet: !!this.apiKey,
+                                        apiEndpoint: this.apiEndpoint,
+                                        messageCount: this.messageHistory.length
+                                    };
+                                }
+                            };
+                            
+                            // Try to load API key from localStorage
+                            try {
+                                const storedKey = localStorage.getItem('canvas_openai_api_key');
+                                if (storedKey) {
+                                    window.openAIService.apiKey = storedKey;
+                                    console.log("Loaded API key from localStorage");
+                                }
+                            } catch(e) {
+                                console.warn("Failed to load API key from localStorage:", e);
+                            }
+                            
+                            initAIModuleSlashCommands();
+                        }
+                    }
+                }, 3000);
+            }
+        }, 1500);
+    }
 });
 
 /**
  * Initialize slash commands for the AI module.
  */
 function initAIModuleSlashCommands() {
-    // Register AI commands as global commands (not module commands)
+    // Don't initialize if SlashCommands is not available
+    if (!window.SlashCommands) {
+        console.error("SlashCommands not available for AI commands registration");
+        return;
+    }
+    
+    // Prevent duplicate initialization
+    if (window.aiCommandsInitialized) {
+        console.log("AI commands already registered, skipping");
+        return;
+    }
+    
+    // Register AI commands as global commands
     registerAICommands();
-    console.log("AI slash commands initialized");
+    
+    // Set flag to prevent re-initialization
+    window.aiCommandsInitialized = true;
+    
+    // Mark as initialized in global app state if available
+    if (window.AppInit && typeof window.AppInit.register === 'function') {
+        window.AppInit.register('aiCommands');
+    }
+    
+    console.log("✅ AI slash commands initialized successfully");
 }
 
 /**
  * Register always-available AI commands as global commands.
  */
 function registerAICommands() {
-    // Main AI command group
-    window.SlashCommands.registerGlobal(
-        '/ai',
-        'ai help',
-        'Manage AI assistant settings'
-    );
-    
-    // Register all AI commands as global commands
-    window.SlashCommands.registerGlobal(
-        '/ai key',
-        '/ai key',
-        'Set your OpenAI API key'
-    );
-    window.SlashCommands.registerGlobal(
-        '/ai model',
-        '/ai model',
-        'Set AI model (gpt-4o, gpt-4o-mini, gpt-3.5-turbo)'
-    );
-    window.SlashCommands.registerGlobal(
-        '/ai endpoint',
-        '/ai endpoint',
-        'Set custom API endpoint URL'
-    );
-    window.SlashCommands.registerGlobal(
-        '/ai reset-endpoint',
-        '/ai reset-endpoint',
-        'Reset API endpoint to default'
-    );
-    window.SlashCommands.registerGlobal(
-        '/ai clear',
-        '/ai clear',
-        'Clear conversation history'
-    );
-    window.SlashCommands.registerGlobal(
-        '/ai settings',
-        '/ai settings',
-        'Show current AI settings'
-    );
-    window.SlashCommands.registerGlobal(
-        '/ai help',
-        '/ai help',
-        'Show AI assistant help'
-    );
-    
-    // Hook into slash command execution for AI commands
-    hookSlashCommandExecution();
+    try {
+        // Main AI command group
+        window.SlashCommands.registerGlobal(
+            '/ai',
+            'ai help',
+            'Manage AI assistant settings'
+        );
+        
+        // Register all AI commands as global commands
+        window.SlashCommands.registerGlobal(
+            '/ai key',
+            '/ai key',
+            'Set your OpenAI API key'
+        );
+        window.SlashCommands.registerGlobal(
+            '/ai model',
+            '/ai model',
+            'Set AI model (gpt-4o, gpt-4o-mini, gpt-3.5-turbo)'
+        );
+        window.SlashCommands.registerGlobal(
+            '/ai endpoint',
+            '/ai endpoint',
+            'Set custom API endpoint URL'
+        );
+        window.SlashCommands.registerGlobal(
+            '/ai reset-endpoint',
+            '/ai reset-endpoint',
+            'Reset API endpoint to default'
+        );
+        window.SlashCommands.registerGlobal(
+            '/ai clear',
+            '/ai clear',
+            'Clear conversation history'
+        );
+        window.SlashCommands.registerGlobal(
+            '/ai settings',
+            '/ai settings',
+            'Show current AI settings'
+        );
+        window.SlashCommands.registerGlobal(
+            '/ai help',
+            '/ai help',
+            'Show AI assistant help'
+        );
+        
+        // Hook into slash command execution for AI commands
+        hookSlashCommandExecution();
+        
+        console.log("AI commands registered successfully");
+    } catch (e) {
+        console.error("Error registering AI commands:", e);
+    }
 }
 
 /**
@@ -101,10 +229,20 @@ function hookSlashCommandExecution() {
         return;
     }
     
-    // Listen for clicks in the autocomplete dropdown
-    const autocompleteDropdown = document.querySelector('.slash-command-autocomplete');
-    if (autocompleteDropdown) {
-        autocompleteDropdown.addEventListener('click', function(e) {
+    // Listen for clicks in the autocomplete dropdown with retry logic
+    const setupAutocompleteListener = function() {
+        const autocompleteDropdown = document.querySelector('.slash-command-autocomplete');
+        if (!autocompleteDropdown) {
+            console.log("Autocomplete dropdown not found, retrying in 500ms");
+            setTimeout(setupAutocompleteListener, 500);
+            return;
+        }
+        
+        // Clone and replace to avoid duplicate event listeners
+        const newDropdown = autocompleteDropdown.cloneNode(true);
+        autocompleteDropdown.parentNode.replaceChild(newDropdown, autocompleteDropdown);
+        
+        newDropdown.addEventListener('click', function(e) {
             const item = e.target.closest('.slash-command-item');
             if (!item) return;
             const command = item.dataset.command;
@@ -112,25 +250,46 @@ function hookSlashCommandExecution() {
                 handleAISlashCommand(command, e);
             }
         });
-    }
+        
+        console.log("AI slash command autocomplete listener attached successfully");
+    };
+    
+    // Start trying to set up the autocomplete listener
+    setupAutocompleteListener();
     
     // Modify the chat input to handle AI commands when Enter is pressed
-    const chatInput = document.getElementById('chat-input');
-    const chatSend = document.getElementById('chat-send');
-    if (chatInput && chatSend) {
-        const originalKeydownHandler = chatInput.onkeydown;
+    const setupChatInputListener = function() {
+        const chatInput = document.getElementById('chat-input');
+        if (!chatInput) {
+            console.log("Chat input not found, retrying in 500ms");
+            setTimeout(setupChatInputListener, 500);
+            return;
+        }
         
-        chatInput.addEventListener('keydown', function(e) {
+        // Define handler function for AI commands
+        function aiCommandKeydownHandler(e) {
             if (e.key === 'Enter' && !e.shiftKey) {
-                const text = chatInput.value.trim();
+                const text = this.value.trim();
                 if (text.startsWith('/ai ')) {
                     e.preventDefault();
                     handleAICommandExecution(text);
                     return;
                 }
             }
-        });
-    }
+        }
+        
+        // Clone and replace to avoid duplicate event listeners
+        const newChatInput = chatInput.cloneNode(true);
+        chatInput.parentNode.replaceChild(newChatInput, chatInput);
+        
+        // Add the handler to the new input
+        newChatInput.addEventListener('keydown', aiCommandKeydownHandler);
+        
+        console.log("AI slash command chat input listener attached successfully");
+    };
+    
+    // Start trying to set up the chat input listener
+    setupChatInputListener();
 }
 
 /**
@@ -151,6 +310,14 @@ function handleAISlashCommand(command, event) {
         promptForModelSelection();
     } else if (command === '/ai endpoint') {
         promptForAPIEndpoint();
+    } else if (command === '/ai reset-endpoint') {
+        handleResetApiEndpointCommand();
+    } else if (command === '/ai clear') {
+        handleClearConversationCommand();
+    } else if (command === '/ai settings') {
+        showAISettings();
+    } else if (command === '/ai help') {
+        showAIHelp();
     }
 }
 
@@ -233,39 +400,46 @@ function promptForAPIKey() {
 </div>
 `;
     const msgElement = showSystemMessage(messageHTML);
-    const keyInput = msgElement.querySelector('#ai-api-key-input');
-    const submitBtn = msgElement.querySelector('#ai-api-key-submit');
-    const cancelBtn = msgElement.querySelector('#ai-api-key-cancel');
     
-    if (keyInput && submitBtn && cancelBtn) {
-        submitBtn.addEventListener('click', function() {
-            const apiKey = keyInput.value.trim();
-            if (apiKey) {
-                handleApiKeyCommand(apiKey);
-            }
-        });
-        cancelBtn.addEventListener('click', function() {
-            showSystemMessage('API key setup cancelled.');
-        });
-        keyInput.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
+    // Add short delay to ensure DOM is updated
+    setTimeout(() => {
+        const keyInput = msgElement.querySelector('#ai-api-key-input');
+        const submitBtn = msgElement.querySelector('#ai-api-key-submit');
+        const cancelBtn = msgElement.querySelector('#ai-api-key-cancel');
+        
+        if (keyInput && submitBtn && cancelBtn) {
+            submitBtn.addEventListener('click', function() {
                 const apiKey = keyInput.value.trim();
                 if (apiKey) {
                     handleApiKeyCommand(apiKey);
                 }
-            }
-        });
-        setTimeout(() => {
+            });
+            cancelBtn.addEventListener('click', function() {
+                showSystemMessage('API key setup cancelled.');
+            });
+            keyInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const apiKey = keyInput.value.trim();
+                    if (apiKey) {
+                        handleApiKeyCommand(apiKey);
+                    }
+                }
+            });
             keyInput.focus();
-        }, 100);
-    }
+        }
+    }, 100);
 }
 
 /**
  * Prompt for API endpoint.
  */
 function promptForAPIEndpoint() {
+    if (!window.openAIService) {
+        showSystemMessage('⚠️ OpenAI service not initialized.');
+        return;
+    }
+    
     const currentEndpoint = window.openAIService.apiEndpoint;
     const messageHTML = `
 <div class="ai-input-prompt">
@@ -279,40 +453,47 @@ function promptForAPIEndpoint() {
 </div>
 `;
     const msgElement = showSystemMessage(messageHTML);
-    const endpointInput = msgElement.querySelector('#ai-endpoint-input');
-    const submitBtn = msgElement.querySelector('#ai-endpoint-submit');
-    const cancelBtn = msgElement.querySelector('#ai-endpoint-cancel');
     
-    if (endpointInput && submitBtn && cancelBtn) {
-        submitBtn.addEventListener('click', function() {
-            const endpoint = endpointInput.value.trim();
-            if (endpoint) {
-                handleApiEndpointCommand(endpoint);
-            }
-        });
-        cancelBtn.addEventListener('click', function() {
-            showSystemMessage('API endpoint setup cancelled.');
-        });
-        endpointInput.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
+    // Add short delay to ensure DOM is updated
+    setTimeout(() => {
+        const endpointInput = msgElement.querySelector('#ai-endpoint-input');
+        const submitBtn = msgElement.querySelector('#ai-endpoint-submit');
+        const cancelBtn = msgElement.querySelector('#ai-endpoint-cancel');
+        
+        if (endpointInput && submitBtn && cancelBtn) {
+            submitBtn.addEventListener('click', function() {
                 const endpoint = endpointInput.value.trim();
                 if (endpoint) {
                     handleApiEndpointCommand(endpoint);
                 }
-            }
-        });
-        setTimeout(() => {
+            });
+            cancelBtn.addEventListener('click', function() {
+                showSystemMessage('API endpoint setup cancelled.');
+            });
+            endpointInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const endpoint = endpointInput.value.trim();
+                    if (endpoint) {
+                        handleApiEndpointCommand(endpoint);
+                    }
+                }
+            });
             endpointInput.focus();
             endpointInput.select();
-        }, 100);
-    }
+        }
+    }, 100);
 }
 
 /**
  * Prompt for model selection.
  */
 function promptForModelSelection() {
+    if (!window.openAIService) {
+        showSystemMessage('⚠️ OpenAI service not initialized.');
+        return;
+    }
+    
     const currentModel = window.openAIService.model;
     const messageHTML = `
 <div class="ai-input-prompt">
@@ -339,26 +520,30 @@ function promptForModelSelection() {
 </div>
 `;
     const msgElement = showSystemMessage(messageHTML);
-    const submitBtn = msgElement.querySelector('#ai-model-submit');
-    const cancelBtn = msgElement.querySelector('#ai-model-cancel');
-    const radioInputs = msgElement.querySelectorAll('input[name="ai-model"]');
     
-    if (submitBtn && cancelBtn) {
-        submitBtn.addEventListener('click', function() {
-            let selectedModel = null;
-            radioInputs.forEach(input => {
-                if (input.checked) {
-                    selectedModel = input.value;
+    // Add short delay to ensure DOM is updated
+    setTimeout(() => {
+        const submitBtn = msgElement.querySelector('#ai-model-submit');
+        const cancelBtn = msgElement.querySelector('#ai-model-cancel');
+        const radioInputs = msgElement.querySelectorAll('input[name="ai-model"]');
+        
+        if (submitBtn && cancelBtn) {
+            submitBtn.addEventListener('click', function() {
+                let selectedModel = null;
+                radioInputs.forEach(input => {
+                    if (input.checked) {
+                        selectedModel = input.value;
+                    }
+                });
+                if (selectedModel) {
+                    handleSetModelCommand(selectedModel);
                 }
             });
-            if (selectedModel) {
-                handleSetModelCommand(selectedModel);
-            }
-        });
-        cancelBtn.addEventListener('click', function() {
-            showSystemMessage('Model selection cancelled.');
-        });
-    }
+            cancelBtn.addEventListener('click', function() {
+                showSystemMessage('Model selection cancelled.');
+            });
+        }
+    }, 100);
 }
 
 /**

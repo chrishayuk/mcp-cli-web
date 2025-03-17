@@ -1,5 +1,6 @@
 /**
- * Slash Command Handler for Terminal Canvas
+ * js/slash-commands/slash-command-handler.js
+ * Slash Command Handler for Terminal Canvas - Fixed Version
  * 
  * Main slash command system that modules can extend with their own commands
  * Provides a unified interface for registering and executing slash commands
@@ -7,19 +8,55 @@
 
 // Initialize slash commands when document is loaded
 document.addEventListener('DOMContentLoaded', function() {
-    // Wait for other modules to load
-    setTimeout(function() {
+    // Prevent duplicate initialization
+    if (window.slashCommandHandlerInitialized) {
+        console.log("Slash command handler already initialized, skipping");
+        return;
+    }
+    
+    // Set initialization flag
+    window.slashCommandHandlerInitialized = true;
+    
+    // Check if canvas manager is available
+    const checkDependencies = function() {
         if (window.Commands && window.Commands.canvasManager) {
-            console.log("Initializing slash command handler...");
+            console.log("Dependencies for slash command handler available");
             initSlashCommandHandler();
+            return true;
         }
-    }, 800);
+        return false;
+    };
+    
+    // Try to initialize immediately
+    if (!checkDependencies()) {
+        // First retry after 1.2 seconds
+        setTimeout(function() {
+            if (!checkDependencies()) {
+                // Second retry after 2.5 more seconds
+                setTimeout(function() {
+                    if (!checkDependencies()) {
+                        console.error("Canvas manager not available after multiple attempts - FATAL");
+                        
+                        // Last resort - try to force initialize even without dependencies
+                        console.log("Attempting emergency initialization of slash commands...");
+                        initSlashCommandHandler();
+                    }
+                }, 2500);
+            }
+        }, 1200);
+    }
 });
 
 /**
  * Initialize the slash command handler
  */
 function initSlashCommandHandler() {
+    // Do not initialize twice
+    if (window.SlashCommands) {
+        console.log("SlashCommands object already exists, skipping initialization");
+        return;
+    }
+    
     // Create the global slash command registry
     window.SlashCommands = {
         // Command registries - split into global and module-specific
@@ -45,8 +82,12 @@ function initSlashCommandHandler() {
             console.log(`Slash commands: active module set to ${moduleName}`);
             
             // Update any module-specific UI elements or features
-            if (window['update' + capitalizeFirstLetter(moduleName) + 'Module']) {
-                window['update' + capitalizeFirstLetter(moduleName) + 'Module']();
+            try {
+                if (window['update' + capitalizeFirstLetter(moduleName) + 'Module']) {
+                    window['update' + capitalizeFirstLetter(moduleName) + 'Module']();
+                }
+            } catch (e) {
+                console.error("Error updating module:", e);
             }
         },
         
@@ -169,14 +210,19 @@ function initSlashCommandHandler() {
     registerCoreCommands();
     hookCanvasManagerActivation();
     
-    console.log("Slash command handler initialized");
+    // Mark as initialized in global app state if available
+    if (window.AppInit && typeof window.AppInit.register === 'function') {
+        window.AppInit.register('slashCommands');
+    }
+    
+    console.log("✅ Slash command handler initialized successfully");
 }
 
 /**
  * Set up the UI elements for slash commands
  */
 function setupSlashCommandUI() {
-    const chatInput = document.getElementById('chat-input');
+    let chatInput = document.getElementById('chat-input');
     const chatInputContainer = document.querySelector('.chat-input-container');
     
     if (!chatInput || !chatInputContainer) {
@@ -184,31 +230,46 @@ function setupSlashCommandUI() {
         return;
     }
     
-    // Create the autocomplete dropdown
-    const autocompleteDropdown = document.createElement('div');
-    autocompleteDropdown.className = 'slash-command-autocomplete';
-    autocompleteDropdown.style.display = 'none';
-    chatInputContainer.appendChild(autocompleteDropdown);
+    // Create the autocomplete dropdown if it doesn't exist
+    let autocompleteDropdown = document.querySelector('.slash-command-autocomplete');
+    if (!autocompleteDropdown) {
+        autocompleteDropdown = document.createElement('div');
+        autocompleteDropdown.className = 'slash-command-autocomplete';
+        autocompleteDropdown.style.display = 'none';
+        chatInputContainer.appendChild(autocompleteDropdown);
+    }
     
-    // Add slash command button
-    const slashButton = document.createElement('button');
-    slashButton.className = 'slash-command-button';
-    slashButton.title = 'Slash Commands';
-    slashButton.innerHTML = '<i class="fas fa-slash"></i>';
-    
-    // Insert before the send button
-    const sendButton = document.getElementById('chat-send');
-    if (sendButton) {
-        chatInputContainer.insertBefore(slashButton, sendButton);
-    } else {
-        chatInputContainer.appendChild(slashButton);
+    // Add slash command button if it doesn't exist
+    let slashButton = document.querySelector('.slash-command-button');
+    if (!slashButton) {
+        slashButton = document.createElement('button');
+        slashButton.className = 'slash-command-button';
+        slashButton.title = 'Slash Commands';
+        slashButton.innerHTML = '<i class="fas fa-slash"></i>';
+        
+        // Insert before the send button
+        const sendButton = document.getElementById('chat-send');
+        if (sendButton) {
+            chatInputContainer.insertBefore(slashButton, sendButton);
+        } else {
+            chatInputContainer.appendChild(slashButton);
+        }
     }
     
     // Track command state
     let isSlashCommandActive = false;
     let selectedAutocompleteIndex = -1;
     
-    // Event listeners
+    // Clean up existing event listeners to avoid duplicates
+    const newChatInput = chatInput.cloneNode(true);
+    chatInput.parentNode.replaceChild(newChatInput, chatInput);
+    chatInput = newChatInput;
+    
+    const newSlashButton = slashButton.cloneNode(true);
+    slashButton.parentNode.replaceChild(newSlashButton, slashButton);
+    slashButton = newSlashButton;
+    
+    // Add event listeners to cloned elements
     chatInput.addEventListener('input', handleInput);
     chatInput.addEventListener('keydown', handleKeyDown);
     
@@ -334,6 +395,11 @@ function setupSlashCommandUI() {
      * @param {boolean} execute - Whether to execute the command
      */
     function applySelectedCommand(command, execute) {
+        if (!window.SlashCommands) {
+            console.error("SlashCommands not available");
+            return;
+        }
+        
         const availableCommands = window.SlashCommands.getAvailableCommands();
         
         // Handle module activation commands
@@ -385,14 +451,20 @@ function setupSlashCommandUI() {
         
         // Hide dropdown and reset state after applying
         autocompleteDropdown.style.display = 'none';
+        isSlashCommandActive = false;
         chatInput.classList.remove('slash-active');
     }
     
     /**
      * Show slash command autocomplete suggestions based on input
-     * @param {string} text - Current input text
      */
     function showAutocompleteSuggestions(text) {
+        // Check if SlashCommands exists
+        if (!window.SlashCommands) {
+            console.error("SlashCommands not initialized");
+            return;
+        }
+        
         // Extract slash command
         const parts = text.split(' ');
         const slashCommand = parts[0].toLowerCase();
@@ -468,43 +540,49 @@ function setupSlashCommandUI() {
         autocompleteDropdown.style.width = `${rect.width}px`;
         autocompleteDropdown.style.display = 'block';
     }
+}
+
+/**
+ * Show a help message with available slash commands
+ */
+function showSlashCommandHelp() {
+    // Check if SlashCommands is initialized
+    if (!window.SlashCommands) {
+        console.error("SlashCommands not initialized");
+        return;
+    }
     
-    /**
-     * Show a help message with available slash commands
-     */
-    function showSlashCommandHelp() {
-        // Get available commands and descriptions
-        const availableCommands = window.SlashCommands.getAvailableCommands();
-        const availableDescriptions = window.SlashCommands.getAvailableDescriptions();
+    // Get available commands and descriptions
+    const availableCommands = window.SlashCommands.getAvailableCommands();
+    const availableDescriptions = window.SlashCommands.getAvailableDescriptions();
+    
+    // Group by category for better organization
+    const categorizedCommands = groupCommandsByCategory(
+        availableCommands,
+        availableDescriptions
+    );
+    
+    // Build help message
+    let helpMessage = '<strong>Available Slash Commands:</strong><br><br>';
+    
+    for (const category in categorizedCommands) {
+        const commands = categorizedCommands[category];
+        if (commands.length === 0) continue;
         
-        // Group by category for better organization
-        const categorizedCommands = groupCommandsByCategory(
-            availableCommands,
-            availableDescriptions
-        );
+        helpMessage += `<u>${category} Commands:</u><br>`;
         
-        // Build help message
-        let helpMessage = '<strong>Available Slash Commands:</strong><br><br>';
+        commands.forEach(cmd => {
+            helpMessage += `<span class="slash-command-example">${cmd}</span> - ${availableDescriptions[cmd]}<br>`;
+        });
         
-        for (const category in categorizedCommands) {
-            const commands = categorizedCommands[category];
-            if (commands.length === 0) continue;
-            
-            helpMessage += `<u>${category} Commands:</u><br>`;
-            
-            commands.forEach(cmd => {
-                helpMessage += `<span class="slash-command-example">${cmd}</span> - ${availableDescriptions[cmd]}<br>`;
-            });
-            
-            helpMessage += '<br>';
-        }
-        
-        helpMessage += "Type a slash (/) followed by a command. Press Tab to autocomplete.";
-        
-        // Display message in chat
-        if (window.ChatInterface && typeof window.ChatInterface.addSystemMessage === 'function') {
-            window.ChatInterface.addSystemMessage(helpMessage);
-        }
+        helpMessage += '<br>';
+    }
+    
+    helpMessage += "Type a slash (/) followed by a command. Press Tab to autocomplete.";
+    
+    // Display message in chat
+    if (window.ChatInterface && typeof window.ChatInterface.addSystemMessage === 'function') {
+        window.ChatInterface.addSystemMessage(helpMessage);
     }
 }
 
@@ -512,6 +590,12 @@ function setupSlashCommandUI() {
  * Register core slash commands that are always available
  */
 function registerCoreCommands() {
+    // Check if SlashCommands is initialized
+    if (!window.SlashCommands) {
+        console.error("SlashCommands not initialized, can't register core commands");
+        return;
+    }
+    
     // Register global commands
     window.SlashCommands.registerGlobal('/help', 'help', 'Show available commands');
     window.SlashCommands.registerGlobal('/clear', 'clear canvas', 'Clear the canvas');
@@ -528,16 +612,20 @@ function registerCoreCommands() {
     window.SlashCommands.registerGlobal('/reset', 'reset view', 'Reset canvas view');
     
     // Module activation commands - these will work via special handling
-    window.SlashCommands.registerModuleCommand('chart', '/chart', 'chart', 'Create a chart visualization', true);
-    window.SlashCommands.registerModuleCommand('chart', '/pie', 'chart pie', 'Create a pie chart', true);
-    window.SlashCommands.registerModuleCommand('chart', '/bar', 'chart bar', 'Create a bar chart', true);
-    window.SlashCommands.registerModuleCommand('chart', '/line', 'chart line', 'Create a line chart', true);
-    
-    window.SlashCommands.registerModuleCommand('markdown', '/md', 'show markdown', 'Render markdown content', true);
-    window.SlashCommands.registerModuleCommand('markdown', '/markdown', 'show markdown', 'Render markdown content', true);
-    
-    window.SlashCommands.registerModuleCommand('terminal', '/terminal', 'connect terminal', 'Connect to a terminal', true);
-    window.SlashCommands.registerModuleCommand('terminal', '/connect', 'connect terminal', 'Connect to a terminal', true);
+    try {
+        window.SlashCommands.registerModuleCommand('chart', '/chart', 'chart', 'Create a chart visualization', true);
+        window.SlashCommands.registerModuleCommand('chart', '/pie', 'chart pie', 'Create a pie chart', true);
+        window.SlashCommands.registerModuleCommand('chart', '/bar', 'chart bar', 'Create a bar chart', true);
+        window.SlashCommands.registerModuleCommand('chart', '/line', 'chart line', 'Create a line chart', true);
+        
+        window.SlashCommands.registerModuleCommand('markdown', '/md', 'show markdown', 'Render markdown content', true);
+        window.SlashCommands.registerModuleCommand('markdown', '/markdown', 'show markdown', 'Render markdown content', true);
+        
+        window.SlashCommands.registerModuleCommand('terminal', '/terminal', 'connect terminal', 'Connect to a terminal', true);
+        window.SlashCommands.registerModuleCommand('terminal', '/connect', 'connect terminal', 'Connect to a terminal', true);
+    } catch (e) {
+        console.error("Error registering module commands:", e);
+    }
     
     console.log("Core slash commands registered");
 }
@@ -582,8 +670,10 @@ function hookCanvasManagerActivation() {
             }
             
             console.log("Hooked into canvas manager for module activation");
+        } else {
+            console.error("Could not hook into canvas manager - not found");
         }
-    }, 1000);
+    }, 1500);
 }
 
 /**
@@ -636,7 +726,7 @@ function showModuleActivationMessage(moduleName) {
     }
     
     // Show message
-    // window.ChatInterface.addSystemMessage(message);
+    window.ChatInterface.addSystemMessage(message);
 }
 
 /**
@@ -646,6 +736,12 @@ function showModuleActivationMessage(moduleName) {
  * @returns {Object} Grouped commands by category
  */
 function groupCommandsByCategory(commands, descriptions) {
+    // Check for empty inputs
+    if (!commands || !descriptions) {
+        console.error("Invalid input to groupCommandsByCategory");
+        return { 'Other': [] };
+    }
+    
     const categories = {
         'Canvas': [],
         'Code': [],
@@ -693,6 +789,7 @@ function groupCommandsByCategory(commands, descriptions) {
  * @returns {string} Capitalized string
  */
 function capitalizeFirstLetter(str) {
+    if (!str) return '';
     return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
@@ -745,7 +842,7 @@ window.debugSlashCommands = function() {
     const slashButton = document.querySelector('.slash-command-button');
     console.log(`  Slash button: ${slashButton ? 'Found' : 'Not found'}`);
     
-    const cssLink = document.querySelector('link[href*="slash-commands.css"]');
+    const cssLink = document.querySelector('link[href*="slash-command"]');
     console.log(`  CSS link: ${cssLink ? 'Found' : 'Not found'}`);
     
     console.log("=== END SLASH COMMANDS DEBUG ===");
