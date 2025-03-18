@@ -1,52 +1,53 @@
 /**
- * main.css styling
+ * styles/main.css styling
  * 
  * CSS styles for the slash command system in Terminal Canvas
  */
  :root {
     --bg-terminal: #0C0C0C;
     --text-green: #0FFF0F;
-    --text-dim: #00BB00;
-    --text-header: #00FFFF;
-    --text-warning: #FFFF00;
-    --text-error: #FF0000;
+    --text-dim: #0B0;
+    --text-header: #0FF;
+    --text-warning: #FF0;
+    --text-error: #F00;
     --bg-panel: #1A1A1A;
-    --border-color: #333333;
+    --border-color: #333;
     --cursor-color: #0FFF0F;
     --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Courier New', monospace;
-}
-
-* {
+  }
+  
+  * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-}
-
-html, body {
+  }
+  
+  html, body {
     height: 100%;
     font-family: var(--font-mono);
     font-size: 14px;
     line-height: 1.4;
-}
-
-body {
+    overflow: hidden;
+  }
+  
+  body {
     background-color: var(--bg-terminal);
     color: var(--text-green);
-    padding: 0;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
     height: 100vh;
-}
-
-.main-container {
+  }
+  
+  /* Main layout */
+  .main-container {
     display: flex;
     flex: 1;
-    height: calc(100vh - 24px); /* Reduced from 30px to 24px */
-    margin-top: 0;
-}
-
-.terminal-window {
+    height: calc(100vh - 24px); /* Terminal and status bar area */
+    margin: 0;
+    padding: 0;
+  }
+  
+  .terminal-window {
     border-right: 1px solid var(--border-color);
     overflow: hidden;
     display: flex;
@@ -54,144 +55,104 @@ body {
     width: 40%;
     height: 100%;
     min-width: 300px;
-    box-shadow: 0 0 20px rgba(0, 255, 0, 0.1);
-}
-
-.canvas-window {
+    box-shadow: 0 0 20px rgb(0 255 0 / 10%);
+  }
+  
+  .canvas-window {
     flex: 1;
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    background-color: rgba(0, 0, 0, 0.3);
+    background-color: rgb(0 0 0 / 30%);
     position: relative;
-}
-
-.terminal-titlebar {
+  }
+  
+  /* Titlebars */
+  .terminal-titlebar,
+  .canvas-titlebar {
     background-color: var(--bg-panel);
     padding: 0.3rem 0.5rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
     border-bottom: 1px solid var(--border-color);
-}
-
-.terminal-title {
+  }
+  
+  .terminal-title,
+  .canvas-title {
     color: var(--text-header);
     font-weight: bold;
     display: flex;
     align-items: center;
     gap: 0.5rem;
     font-size: 0.85rem;
-}
-
-.terminal-controls {
+  }
+  
+  /* Terminal controls and dots */
+  .terminal-controls {
     display: flex;
     gap: 0.5rem;
-}
-
-.terminal-dot {
+  }
+  
+  .terminal-dot {
     width: 10px;
     height: 10px;
     border-radius: 50%;
     background-color: var(--text-dim);
-}
-
-.terminal-dot:hover {
+  }
+  
+  .terminal-dot:hover {
     background-color: var(--text-green);
-}
-
-.terminal-body {
+  }
+  
+  /* Terminal body */
+  .terminal-body {
     display: flex;
     flex-direction: column;
     flex: 1;
     overflow: hidden;
     padding-bottom: 0; /* Removed bottom padding */
-}
-
-.canvas-titlebar {
-    background-color: var(--bg-panel);
-    padding: 0.3rem 0.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.canvas-title {
-    color: var(--text-header);
-    font-weight: bold;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.85rem;
-}
-
-.canvas-container {
+  }
+  
+  /* Canvas container and canvas element */
+  .canvas-container {
     flex: 1;
     display: flex;
     justify-content: center;
     align-items: center;
     position: relative;
     overflow: hidden;
-}
-
-canvas {
-    background-color: rgba(0, 0, 0, 0.5);
+  }
+  
+  canvas {
+    background-color: rgb(0 0 0 / 50%);
     max-width: 100%;
     max-height: 100%;
     display: block;
-}
-
-.status {
+  }
+  
+  /* Status bar and status items */
+  .status {
     display: inline-flex;
     align-items: center;
     gap: 0.25rem;
     font-size: 0.8rem;
-}
-
-.status.loading {
+  }
+  
+  .status.loading {
     color: var(--text-warning);
-}
-
-.status.success {
+  }
+  
+  .status.success {
     color: var(--text-green);
-}
-
-.status.error {
+  }
+  
+  .status.error {
     color: var(--text-error);
-}
-
-.terminal-scanlines {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(
-        to bottom,
-        rgba(18, 16, 16, 0) 50%,
-        rgba(0, 0, 0, 0.25) 50%
-    );
-    background-size: 100% 4px;
-    z-index: 2;
-    pointer-events: none;
-    opacity: 0.15;
-}
-
-.terminal-glow {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    box-shadow: inset 0 0 150px rgba(0, 255, 0, 0.5);
-    pointer-events: none;
-    z-index: 1;
-    opacity: 0.1;
-}
-
-.status-bar {
-    height: 24px; /* Reduced from 30px to 24px */
+  }
+  
+  .status-bar {
+    height: 24px; /* Reduced from 30px */
     background-color: var(--bg-panel);
     border-top: 1px solid var(--border-color);
     display: flex;
@@ -199,40 +160,41 @@ canvas {
     padding: 0 0.5rem;
     font-size: 0.8rem;
     color: var(--text-dim);
-}
-
-.status-item {
+  }
+  
+  .status-item {
     margin-right: 1rem;
     display: flex;
     align-items: center;
     gap: 0.25rem;
-}
-
-/* AI status styling */
-#ai-status-item.status-connected {
+  }
+  
+  /* AI status styling */
+  #ai-status-item.status-connected {
     color: var(--text-green);
-}
-
-#ai-status-item.status-disconnected {
+  }
+  
+  #ai-status-item.status-disconnected {
     color: var(--text-error);
-}
-
-#ai-status-item i {
+  }
+  
+  #ai-status-item i {
     margin-right: 4px;
-}
-
-/* Animation for updating AI status */
-@keyframes pulse {
+  }
+  
+  /* Pulse animation for AI status updates */
+  @keyframes pulse {
     0% { transform: scale(1); }
     50% { transform: scale(1.2); }
     100% { transform: scale(1); }
-}
-
-#ai-status-item.status-updated i {
+  }
+  
+  #ai-status-item.status-updated i {
     animation: pulse 0.5s ease;
-}
-
-.canvas-controls {
+  }
+  
+  /* Canvas controls */
+  .canvas-controls {
     position: absolute;
     bottom: 1rem;
     right: 1rem;
@@ -240,9 +202,10 @@ canvas {
     flex-direction: column;
     gap: 0.5rem;
     z-index: 10;
-}
-
-.terminal-button {
+  }
+  
+  /* Terminal buttons */
+  .terminal-button {
     background-color: var(--bg-panel);
     color: var(--text-green);
     border: 1px solid var(--border-color);
@@ -255,93 +218,90 @@ canvas {
     display: inline-flex;
     align-items: center;
     gap: 0.25rem;
-}
-
-.terminal-button:hover {
+  }
+  
+  .terminal-button:hover {
     background-color: var(--border-color);
     color: var(--text-header);
-}
-
-.terminal-button:active {
+  }
+  
+  .terminal-button:active {
     transform: translateY(1px);
-}
-
-.canvas-controls .terminal-button {
-    background-color: rgba(0, 0, 0, 0.6);
-}
-
-/* Instructions overlay */
-.instructions-overlay {
+  }
+  
+  /* Override for canvas controls' buttons */
+  .canvas-controls .terminal-button {
+    background-color: rgb(0 0 0 / 60%);
+  }
+  
+  /* Instructions overlay for canvas */
+  .instructions-overlay {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    color: rgba(15, 255, 15, 0.6);
+    color: rgb(15 255 15 / 60%);
     text-align: center;
     pointer-events: none;
     z-index: 0;
-}
-
-.instructions-overlay p {
+  }
+  
+  .instructions-overlay p {
     margin-bottom: 0.5rem;
     font-size: 0.9rem;
-}
-
-.instructions-overlay i {
+  }
+  
+  .instructions-overlay i {
     font-size: 2rem;
     margin-bottom: 1rem;
-}
-
-/* Chat messages - reduce padding */
-.chat-messages {
+  }
+  
+  /* Chat messages */
+  .chat-messages {
     padding: 0.5rem;
     overflow-y: auto;
-}
-
-/* Scrollbar styling */
-::-webkit-scrollbar {
+  }
+  
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
-}
-
-::-webkit-scrollbar-track {
+  }
+  
+  ::-webkit-scrollbar-track {
     background: var(--bg-terminal);
-}
-
-::-webkit-scrollbar-thumb {
+  }
+  
+  ::-webkit-scrollbar-thumb {
     background: var(--border-color);
     border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
     background: var(--text-dim);
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
+  }
+  
+  /* Responsive adjustments */
+  @media (width <= 768px) {
     .main-container {
-        flex-direction: column;
+      flex-direction: column;
     }
     
     .terminal-window {
-        width: 100%;
-        height: 50%;
-        border-right: none;
-        border-bottom: 1px solid var(--border-color);
+      width: 100%;
+      height: 50%;
+      border-right: none;
+      border-bottom: 1px solid var(--border-color);
     }
     
     .canvas-window {
-        width: 100%;
-        height: 50%;
+      width: 100%;
+      height: 50%;
     }
-}
-
-/**
- * Add these CSS rules to your styles/main.css file
- */
-
-/* Terminal input styles */
-.terminal-input-overlay {
+  }
+  
+  /* Terminal input and related overlays */
+  .terminal-input-overlay {
     position: absolute;
     top: 0;
     left: 0;
@@ -351,261 +311,199 @@ canvas {
     cursor: text;
     z-index: 10;
     transition: outline 0.2s ease;
-}
-
-.terminal-input-overlay:focus {
-    outline: 2px solid rgba(0, 255, 0, 0.5);
-}
-
-.terminal-status-indicator {
+  }
+  
+  .terminal-input-overlay:focus {
+    outline: 2px solid rgb(0 255 0 / 50%);
+  }
+  
+  .terminal-status-indicator {
     position: absolute;
     bottom: 10px;
     right: 10px;
     padding: 5px 10px;
-    background: rgba(0, 0, 0, 0.7);
+    background: rgb(0 0 0 / 70%);
     color: #0F0;
     border-radius: 4px;
-    font-family: 'Consolas', 'Courier New', monospace;
+    font-family: Consolas, 'Courier New', monospace;
     font-size: 12px;
     z-index: 11;
     pointer-events: none;
     user-select: none;
-}
-
-/* Terminal focus effect */
-.canvas-container.terminal-focused .terminal-input-overlay {
-    box-shadow: inset 0 0 10px rgba(0, 255, 0, 0.3);
-}
-
-/* Blinking cursor effect */
-@keyframes blink-cursor {
-    0%, 49% {
-        opacity: 1;
-    }
-    50%, 100% {
-        opacity: 0;
-    }
-}
-
-.terminal-cursor {
+  }
+  
+  /* Terminal focus effect */
+  .canvas-container.terminal-focused .terminal-input-overlay {
+    box-shadow: inset 0 0 10px rgb(0 255 0 / 30%);
+  }
+  
+  /* Blinking cursor effect */
+  @keyframes blink-cursor {
+    0%, 49% { opacity: 1; }
+    50%, 100% { opacity: 0; }
+  }
+  
+  .terminal-cursor {
     animation: blink-cursor 1s infinite;
-}
-
-/* Terminal mode indicator */
-.terminal-mode-indicator {
+  }
+  
+  /* Terminal mode indicator */
+  .terminal-mode-indicator {
     position: absolute;
     top: 10px;
     right: 10px;
     padding: 4px 8px;
-    background: rgba(0, 0, 0, 0.7);
+    background: rgb(0 0 0 / 70%);
     color: #0F0;
     border-radius: 4px;
-    font-family: 'Consolas', 'Courier New', monospace;
+    font-family: Consolas, 'Courier New', monospace;
     font-size: 12px;
     z-index: 12;
-}
-
-/* Split mode styles */
-.main-container.terminal-mode .terminal-window {
+  }
+  
+  /* Split and fullscreen modes */
+  .main-container.terminal-mode .terminal-window {
     width: 40%;
-}
-
-.main-container.terminal-mode .canvas-window {
+  }
+  
+  .main-container.terminal-mode .canvas-window {
     width: 60%;
-}
-
-/* Terminal fullscreen mode */
-.main-container.terminal-fullscreen .terminal-window {
+  }
+  
+  .main-container.terminal-fullscreen .terminal-window {
     display: none;
-}
-
-.main-container.terminal-fullscreen .canvas-window {
+  }
+  
+  .main-container.terminal-fullscreen .canvas-window {
     width: 100%;
-}
-
-/* Terminal welcome styling */
-.terminal-welcome {
+  }
+  
+  /* Terminal welcome styling */
+  .terminal-welcome {
     font-family: var(--font-mono);
     color: var(--text-green);
     line-height: 1.4;
-}
-
-.terminal-welcome-prompt {
+  }
+  
+  .terminal-welcome-prompt {
     color: #0F0;
     font-weight: bold;
-}
-
-.terminal-welcome-cmd {
+  }
+  
+  .terminal-welcome-cmd {
     color: #0FF;
-}
-
-.terminal-welcome-output {
+  }
+  
+  .terminal-welcome-output {
     margin-top: 0.5rem;
     margin-left: 0.5rem;
-}
-
-.terminal-welcome-line {
+  }
+  
+  .terminal-welcome-line {
     margin-bottom: 0.25rem;
-}
-
-.term-bright {
+  }
+  
+  .term-bright {
     color: #FFF;
     font-weight: bold;
-}
-
-.term-cmd {
-    background-color: rgba(0, 255, 0, 0.1);
-    border: 1px solid rgba(0, 255, 0, 0.2);
+  }
+  
+  .term-cmd {
+    background-color: rgb(0 255 0 / 10%);
+    border: 1px solid rgb(0 255 0 / 20%);
     border-radius: 3px;
     padding: 0.1rem 0.3rem;
     cursor: pointer;
     color: #0FF;
-}
-
-.term-cmd:hover {
-    background-color: rgba(0, 255, 0, 0.2);
-}
-
-.term-indent {
+  }
+  
+  .term-cmd:hover {
+    background-color: rgb(0 255 0 / 20%);
+  }
+  
+  .term-indent {
     padding-left: 1rem;
-}
-
-/* AI Avatar styling */
-.ai-avatar {
-    background-color: rgba(20, 40, 80, 0.4) !important;
-    border: 1px solid rgba(0, 150, 200, 0.4);
-}
-
-.ai-avatar i {
+  }
+  
+  /* AI Avatar styling */
+  .ai-avatar {
+    background-color: rgb(20 40 80 / 40%) !important;
+    border: 1px solid rgb(0 150 200 / 40%);
+  }
+  
+  .ai-avatar i {
     color: #0CF;
-}
-
-/* Terminal-style AI messages */
-.message-content {
+  }
+  
+  /* Terminal-style AI messages */
+  .message-content {
     line-height: 1.4;
-}
-
-/* Add a subtle terminal prompt to AI messages */
-.ai-avatar + .message-content .message-text::before {
+  }
+  
+  /* Terminal prompts for messages */
+  .ai-avatar + .message-content .message-text::before {
     content: "assistant $ ";
     color: #0CF;
     font-weight: bold;
     opacity: 0.7;
     font-family: monospace;
-}
-
-/* System message styling */
-.system-avatar + .message-content .message-text::before {
+  }
+  
+  .system-avatar + .message-content .message-text::before {
     content: "system $ ";
     color: #0F0;
     font-weight: bold;
     opacity: 0.7;
     font-family: monospace;
-}
-
-/* User message styling */
-.user-avatar + .message-content .message-text::before {
+  }
+  
+  .user-avatar + .message-content .message-text::before {
     content: "user $ ";
     color: #FF0;
     font-weight: bold;
     opacity: 0.7;
     font-family: monospace;
-}
-
-/* Style code blocks in messages */
-.message-text code {
-    background-color: rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(0, 255, 0, 0.2);
+  }
+  
+  /* Code blocks in messages */
+  .message-text code {
+    background-color: rgb(0 0 0 / 30%);
+    border: 1px solid rgb(0 255 0 / 20%);
     border-radius: 3px;
     padding: 0.1rem 0.3rem;
     font-family: monospace;
     color: #0FF;
-}
-
-/* Add these rules to your main.css file to fix spacing */
-
-/* Reduce ALL spacing in main container and status bar */
-.main-container {
-    height: calc(100vh - 20px) !important; /* Even smaller than before */
+  }
+  
+  /* Consolidated spacing overrides */
+  .main-container {
+    height: calc(100vh - 20px) !important;
     margin: 0;
     padding: 0;
   }
   
   .status-bar {
-    height: 20px !important; /* Reduced from 24px */
+    height: 20px !important;
     padding: 0 0.5rem;
     font-size: 0.75rem;
   }
   
-  /* Reduce padding in title bars */
-  .terminal-titlebar, .canvas-titlebar {
+  .terminal-titlebar,
+  .canvas-titlebar {
     padding: 0.2rem 0.3rem;
   }
   
-  /* Reduce size of dots */
   .terminal-dot {
     width: 8px;
     height: 8px;
   }
   
-  /* Tighten up main body elements */
-  body {
-    margin: 0;
-    padding: 0;
-  }
-  
-  /* Status bar items - make more compact */
   .status-item {
     margin-right: 0.5rem;
     padding: 0;
   }
   
-  /* Reduce the height of the input area */
   .chat-input-container {
     padding: 0.4rem 0.6rem;
   }
   
-  /* Ensure body takes full height without extra margin */
-  html, body {
-    height: 100%;
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-  }
-
-  /* Add these styles to your main.css file to fix the spacing issues */
-
-/* Reduce ALL spacing in main container and status bar */
-.main-container {
-    height: calc(100vh - 20px) !important; /* Smaller than before */
-    margin: 0;
-    padding: 0;
-  }
-  
-  .status-bar {
-    height: 20px !important; /* Reduced */
-    padding: 0 0.5rem;
-    font-size: 0.75rem;
-  }
-  
-  /* Reduce padding in title bars */
-  .terminal-titlebar, .canvas-titlebar {
-    padding: 0.2rem 0.3rem;
-  }
-  
-  /* Reduce size of dots */
-  .terminal-dot {
-    width: 8px;
-    height: 8px;
-  }
-  
-  /* Status bar items - make more compact */
-  .status-item {
-    margin-right: 0.5rem;
-    padding: 0;
-  }
-  
-  /* Reduce the height of the input area */
-  .chat-input-container {
-    padding: 0.4rem 0.6rem;
-  }

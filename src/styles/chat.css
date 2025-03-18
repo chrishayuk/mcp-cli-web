@@ -1,5 +1,5 @@
 /**
- * chat.css styling
+ * styles/chat.css styling
  * 
  * Chat Specific styles for chat ui with terminal enhancements
  */
@@ -45,21 +45,21 @@
 }
 
 .user-avatar {
-    background-color: rgba(0, 255, 0, 0.3);
+    background-color: rgb(0 255 0 / 30%);
     color: var(--text-green);
     border: 1px solid var(--text-green);
 }
 
 .system-avatar {
-    background-color: rgba(0, 255, 255, 0.3);
+    background-color: rgb(0 255 255 / 30%);
     color: var(--text-header);
     border: 1px solid var(--text-header);
 }
 
 /* AI Avatar styling */
 .ai-avatar {
-    background-color: rgba(20, 40, 80, 0.4) !important;
-    border: 1px solid rgba(0, 150, 200, 0.4);
+    background-color: rgb(20 40 80 / 40%) !important;
+    border: 1px solid rgb(0 150 200 / 40%);
 }
 
 .ai-avatar i {
@@ -67,21 +67,21 @@
 }
 
 .message-content {
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: rgb(0 0 0 / 50%);
     padding: 0.75rem;
     border-radius: 8px;
     max-width: 85%;
 }
 
 .user-content {
-    background-color: rgba(0, 100, 0, 0.3);
-    border: 1px solid rgba(0, 255, 0, 0.2);
+    background-color: rgb(0 100 0 / 30%);
+    border: 1px solid rgb(0 255 0 / 20%);
     border-top-right-radius: 0;
 }
 
 .system-content {
-    background-color: rgba(0, 80, 80, 0.3);
-    border: 1px solid rgba(0, 255, 255, 0.2);
+    background-color: rgb(0 80 80 / 30%);
+    border: 1px solid rgb(0 255 255 / 20%);
     border-top-left-radius: 0;
 }
 
@@ -118,8 +118,8 @@
 
 /* Style code blocks in messages */
 .message-text code {
-    background-color: rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(0, 255, 0, 0.2);
+    background-color: rgb(0 0 0 / 30%);
+    border: 1px solid rgb(0 255 0 / 20%);
     border-radius: 3px;
     padding: 0.1rem 0.3rem;
     font-family: var(--font-mono);
@@ -138,7 +138,7 @@
     align-items: center;
     padding: 0.75rem;
     border-top: 1px solid var(--border-color);
-    background-color: rgba(0, 0, 0, 0.2);
+    background-color: rgb(0 0 0 / 20%);
 }
 
 /* Prefix for chat input - like a shell prompt */
@@ -154,7 +154,7 @@
 
 .chat-input {
     flex: 1;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: rgb(0 0 0 / 50%);
     border: 1px solid var(--border-color);
     border-radius: 18px;
     padding: 0.5rem 1rem;
@@ -202,7 +202,7 @@
 }
 
 .chat-send:hover {
-    background-color: rgba(0, 255, 0, 0.1);
+    background-color: rgb(0 255 0 / 10%);
 }
 
 .command-suggestion {
@@ -210,7 +210,7 @@
     padding: 0.3rem 0.5rem;
     margin-right: 0.5rem;
     margin-bottom: 0.5rem;
-    background-color: rgba(0, 0, 0, 0.7);
+    background-color: rgb(0 0 0 / 70%);
     border: 1px solid var(--border-color);
     border-radius: 12px;
     cursor: pointer;
@@ -221,7 +221,7 @@
 }
 
 .command-suggestion:hover {
-    background-color: rgba(0, 255, 0, 0.1);
+    background-color: rgb(0 255 0 / 10%);
     border-color: var(--text-green, #0FFF0F);
 }
 
@@ -242,7 +242,7 @@
 
 /* Terminal processing indicator */
 .terminal-processing {
-    color: var(--text-dim, #00BB00);
+    color: var(--text-dim, #0B0);
     font-family: var(--font-mono);
     margin-right: 8px;
 }
@@ -298,8 +298,8 @@
 }
 
 .term-cmd {
-    background-color: rgba(0, 255, 0, 0.1);
-    border: 1px solid rgba(0, 255, 0, 0.2);
+    background-color: rgb(0 255 0 / 10%);
+    border: 1px solid rgb(0 255 0 / 20%);
     border-radius: 3px;
     padding: 0.1rem 0.3rem;
     cursor: pointer;
@@ -307,7 +307,7 @@
 }
 
 .term-cmd:hover {
-    background-color: rgba(0, 255, 0, 0.2);
+    background-color: rgb(0 255 0 / 20%);
 }
 
 .term-indent {
@@ -319,6 +319,7 @@
     0%, 49% {
         opacity: 1;
     }
+
     50%, 100% {
         opacity: 0;
     }

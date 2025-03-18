@@ -11,7 +11,8 @@ class CommandProcessor {
             'code': ['display', 'language', 'fontsize', 'theme'],
             'shape': ['draw', 'random', 'pattern', 'animate', 'stop'],
             'markdown': ['render', 'load', 'scroll', 'theme'],
-            'terminal': ['connect', 'disconnect', 'send', 'clear', 'resize']
+            'terminal': ['connect', 'disconnect', 'send', 'clear', 'resize'],
+            'ai': ['key', 'model', 'endpoint', 'reset-endpoint', 'clear', 'settings', 'help']
         };
         
         // Command patterns for AI response parsing

@@ -6,12 +6,18 @@
  * Provides code snippet functionality through slash commands
  */
 
-// Initialize when document is loaded
+// Initialize when slash command system is ready
+document.addEventListener('slash-commands:ready', function() {
+    console.log("Slash commands ready, initializing code module commands...");
+    initCodeModuleSlashCommands();
+});
+
+// Fallback initialization if the event doesn't fire
 document.addEventListener('DOMContentLoaded', function() {
-    // Wait for slash command handler and code module to be initialized
     setTimeout(function() {
-        if (window.SlashCommands && window.Commands && window.Commands.canvasManager) {
-            console.log("Initializing code module slash commands...");
+        if (window.SlashCommands && 
+            typeof window.SlashCommands.registerModuleCommand === 'function') {
+            console.log("Initializing code module slash commands via fallback...");
             initCodeModuleSlashCommands();
         }
     }, 1200);
@@ -21,6 +27,11 @@ document.addEventListener('DOMContentLoaded', function() {
  * Initialize slash commands for the code module
  */
 function initCodeModuleSlashCommands() {
+    // Prevent multiple initialization
+    if (window.codeModuleSlashCommandsInitialized) {
+        return;
+    }
+    
     // Register activation commands (always available)
     registerCodeActivationCommands();
     
@@ -30,12 +41,15 @@ function initCodeModuleSlashCommands() {
     // Register snippet commands
     registerCodeSnippetCommands();
     
-    // Register module update function (called when code module becomes active)
+    // Define the module update function - completely overwrite any existing one
     window.updateCodeModule = function() {
         extendCodeModuleWithSlashSupport();
     };
     
-    console.log("Code module slash commands initialized");
+    // Set initialization flag
+    window.codeModuleSlashCommandsInitialized = true;
+    
+    console.log("✅ Code module slash commands initialized");
 }
 
 /**
@@ -188,10 +202,8 @@ function extendCodeModuleWithSlashSupport() {
     
     console.log("Extending code module with slash command support");
     
-    // Add snippet library if not already present
-    if (!codeModule.snippets) {
-        codeModule.snippets = getCodeSnippets();
-    }
+    // Add snippet library
+    codeModule.snippets = getCodeSnippets();
     
     // Store original handleCommand method
     const originalHandleCommand = codeModule.handleCommand;
@@ -241,12 +253,8 @@ function handleSnippetCommand(codeModule, args) {
         return false;
     }
     
-    // Display the snippet - use displayCode if available, otherwise fall back to handleCommand
-    if (typeof codeModule.displayCode === 'function') {
-        return codeModule.displayCode(snippet, language);
-    } else {
-        return codeModule.handleCommand('display', [snippet, language]);
-    }
+    // Display the snippet
+    return codeModule.handleCommand('display', [snippet, language]);
 }
 
 /**

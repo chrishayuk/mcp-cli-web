@@ -50,7 +50,7 @@
   }
   
   .canvas-window:not(.collapsed) .canvas-container {
-    background-color: rgba(30, 30, 30, 0.5);
+    background-color: rgb(30 30 30 / 50%);
   }
   
   /* ---------- RESIZE FUNCTIONALITY ---------- */
@@ -68,7 +68,7 @@
   
   .canvas-resizer:hover, 
   .canvas-resizer:active {
-    background-color: rgba(80, 255, 80, 0.3);
+    background-color: rgb(80 255 80 / 30%);
   }
   
   .resizing {
@@ -97,7 +97,7 @@
   }
   
   .canvas-collapse-button:hover {
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: rgb(255 255 255 / 10%);
     color: #fff;
   }
   
@@ -121,7 +121,7 @@
     right: 15px;
     top: 50%;
     transform: translateY(-50%);
-    background-color: rgba(40, 40, 40, 0.9);
+    background-color: rgb(40 40 40 / 90%);
     border: 1px solid #555;
     border-radius: 4px;
     color: #aaa;
@@ -134,11 +134,11 @@
     z-index: 1000;
     opacity: 0;
     transition: opacity 0.3s ease;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 0 10px rgb(0 0 0 / 50%);
   }
   
   .expanding-button:hover {
-    background-color: rgba(60, 60, 60, 0.9);
+    background-color: rgb(60 60 60 / 90%);
     color: #fff;
   }
   
@@ -224,14 +224,14 @@
   
   .module-button:hover {
     color: #fff;
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: rgb(255 255 255 / 10%);
   }
   
   .module-button[data-active="true"],
   .module-button.active {
-    background-color: rgba(80, 255, 80, 0.2);
+    background-color: rgb(80 255 80 / 20%);
     color: #80ff80;
-    box-shadow: 0 0 5px rgba(80, 255, 80, 0.3);
+    box-shadow: 0 0 5px rgb(80 255 80 / 30%);
   }
   
   /* ---------- CANVAS TABS ---------- */
@@ -336,7 +336,7 @@
   }
   
   .canvas-tab-close:hover {
-    background-color: rgba(255,255,255,0.1);
+    background-color: rgb(255 255 255 / 10%);
     opacity: 1;
   }
   
@@ -364,16 +364,13 @@
   
   .tab-action-button:hover {
     color: #fff;
-    background-color: rgba(255,255,255,0.1);
+    background-color: rgb(255 255 255 / 10%);
   }
   
   /* ---------- CANVAS INSTANCES ---------- */
   .canvas-instance {
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    inset: 0;
     background-color: #1e1e1e;
     display: none;
     overflow: hidden;
@@ -409,8 +406,7 @@
     flex-direction: column;
     z-index: 1000;
     max-height: 70vh;
-    overflow-y: auto;
-    overflow-x: hidden;
+    overflow: hidden auto;
     pointer-events: auto;
   }
   
@@ -425,7 +421,7 @@
     cursor: pointer;
     display: flex;
     align-items: center;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    box-shadow: 0 2px 5px rgb(0 0 0 / 30%);
     transition: transform 0.2s;
     max-width: 150px;
     white-space: nowrap;
@@ -450,7 +446,7 @@
     left: 10px;
     display: flex;
     flex-direction: column;
-    background-color: rgba(30, 30, 30, 0.7);
+    background-color: rgb(30 30 30 / 70%);
     border-radius: 4px;
     padding: 5px;
     z-index: 20;
@@ -476,7 +472,7 @@
   }
   
   .canvas-instance .terminal-button:hover {
-    background-color: rgba(255,255,255,0.1);
+    background-color: rgb(255 255 255 / 10%);
     color: #fff;
   }
   
@@ -487,12 +483,12 @@
     left: 50%;
     transform: translate(-50%, -50%);
     text-align: center;
-    color: rgba(144, 238, 144, 0.7);
+    color: rgb(144 238 144 / 70%);
     pointer-events: none;
     z-index: 10;
     width: 300px;
     max-width: 80%;
-    text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    text-shadow: 0 0 10px rgb(0 0 0 / 50%);
   }
   
   .canvas-instance .instructions-overlay i {
@@ -506,6 +502,7 @@
   }
   
   /* ---------- KEYBOARD SHORTCUTS ---------- */
+
   /* Hide original keyboard shortcuts */
   .keyboard-shortcut-hints {
     display: none !important;
@@ -516,12 +513,12 @@
     position: fixed;
     right: 10px;
     bottom: 10px;
-    background-color: rgba(0, 0, 0, 0.7);
-    border: 1px solid rgba(0, 255, 0, 0.3);
+    background-color: rgb(0 0 0 / 70%);
+    border: 1px solid rgb(0 255 0 / 30%);
     border-radius: 4px;
     padding: 5px;
     font-size: 10px;
-    color: rgba(0, 255, 0, 0.7);
+    color: rgb(0 255 0 / 70%);
     z-index: 100;
     max-width: 150px;
     opacity: 0.5;
@@ -543,7 +540,7 @@
     font-weight: bold;
     margin-bottom: 2px;
     padding-bottom: 2px;
-    border-bottom: 1px solid rgba(0, 255, 0, 0.3);
+    border-bottom: 1px solid rgb(0 255 0 / 30%);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -561,10 +558,10 @@
   }
   
   .keyboard-shortcut-compact kbd {
-    background-color: rgba(0, 0, 0, 0.5);
-    border: 1px solid rgba(0, 255, 0, 0.4);
+    background-color: rgb(0 0 0 / 50%);
+    border: 1px solid rgb(0 255 0 / 40%);
     border-radius: 3px;
-    padding: 0px 2px;
+    padding: 0 2px;
     font-family: monospace;
     font-size: 8px;
     min-width: 8px;
@@ -577,23 +574,23 @@
     position: fixed;
     right: 10px;
     bottom: 10px;
-    background-color: rgba(0, 0, 0, 0.7);
-    border: 1px solid rgba(0, 255, 0, 0.3);
+    background-color: rgb(0 0 0 / 70%);
+    border: 1px solid rgb(0 255 0 / 30%);
     border-radius: 4px;
     width: 24px;
     height: 24px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: rgba(0, 255, 0, 0.7);
+    color: rgb(0 255 0 / 70%);
     cursor: pointer;
     z-index: 101;
     font-size: 12px;
   }
   
   .keyboard-shortcut-toggle:hover {
-    background-color: rgba(0, 0, 0, 0.9);
-    color: rgba(0, 255, 0, 1);
+    background-color: rgb(0 0 0 / 90%);
+    color: rgb(0 255 0 / 100%);
   }
   
   /* ---------- CONTEXT MENU ---------- */
@@ -602,7 +599,7 @@
     background-color: #252525;
     border: 1px solid #444;
     border-radius: 4px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 4px 8px rgb(0 0 0 / 40%);
     z-index: 2000;
     min-width: 180px;
     padding: 4px 0;
@@ -689,7 +686,7 @@
   }
   
   /* ---------- RESPONSIVE ADJUSTMENTS ---------- */
-  @media (max-width: 768px) {
+  @media (width <= 768px) {
     .canvas-tab {
       min-width: 80px;
       padding: 0 8px;

@@ -105,7 +105,7 @@
 }
 
 .settings-table tr:not(:last-child) td {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgb(255 255 255 / 10%);
 }
 
 .settings-table td {
@@ -154,7 +154,7 @@
 
 .command-item .command {
   font-family: monospace;
-  background-color: rgba(99, 110, 123, 0.1);
+  background-color: rgb(99 110 123 / 10%);
   padding: 2px 4px;
   border-radius: 4px;
   margin-right: 8px;
@@ -165,14 +165,14 @@
   margin-top: 16px;
   color: #8b949e;
   font-style: italic;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid rgb(255 255 255 / 10%);
   padding-top: 12px;
 }
 
 /* Command example in messages */
 .slash-command-example {
   font-family: monospace;
-  background-color: rgba(99, 110, 123, 0.4);
+  background-color: rgb(99 110 123 / 40%);
   padding: 2px 5px;
   border-radius: 4px;
   margin-right: 4px;
@@ -234,7 +234,7 @@
 /* Tip box styling */
 .welcome-tip {
   padding: 10px;
-  background-color: rgba(46, 160, 67, 0.1);
+  background-color: rgb(46 160 67 / 10%);
   border-radius: 5px;
   margin: 10px 0;
   font-size: 0.9rem;
@@ -312,7 +312,7 @@
 /* Connected state */
 #ai-status-item.status-connected {
   color: #56d364;
-  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  border-left: 1px solid rgb(255 255 255 / 10%);
 }
 
 #ai-status-item.status-connected i {
@@ -322,7 +322,7 @@
 /* Disconnected state */
 #ai-status-item.status-disconnected {
   color: #f78166;
-  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  border-left: 1px solid rgb(255 255 255 / 10%);
 }
 
 #ai-status-item.status-disconnected i {
@@ -331,7 +331,7 @@
 
 /* Hover effect */
 #ai-status-item:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: rgb(255 255 255 / 10%);
   cursor: pointer;
 }
 
@@ -351,7 +351,7 @@
   background-color: #0d1117;
   border-radius: 6px;
   border: 1px solid #30363d;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 50%);
   overflow: hidden;
   width: 100%;
   max-width: 500px;
@@ -401,7 +401,7 @@
 
 .status-table td {
   padding: 8px 0;
-  border-bottom: 1px solid rgba(100, 100, 120, 0.2);
+  border-bottom: 1px solid rgb(100 100 120 / 20%);
 }
 
 .status-table tr:last-child td {
@@ -436,12 +436,12 @@
 }
 
 .status-badge.connected {
-  background-color: rgba(46, 160, 67, 0.1);
+  background-color: rgb(46 160 67 / 10%);
   color: #56d364;
 }
 
 .status-badge.disconnected {
-  background-color: rgba(248, 81, 73, 0.1);
+  background-color: rgb(248 81 73 / 10%);
   color: #f78166;
 }
 
@@ -536,7 +536,7 @@
 }
 
 /* Responsive adjustments */
-@media (max-width: 576px) {
+@media (width <= 576px) {
   .popup-actions {
     flex-wrap: wrap;
   }

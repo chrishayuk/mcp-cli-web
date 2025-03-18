@@ -1,4 +1,5 @@
 /**
+ * js/canvas/modules/terminal-module/slash-command-handler.js
  * Slash Command Handler Module
  * Manages slash commands and their UI implementation
  */

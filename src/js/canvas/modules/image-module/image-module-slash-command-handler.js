@@ -5,11 +5,18 @@
  * Registers slash commands specific to the image module.
  */
 
-// Initialize when document is loaded
+// Initialize when slash command system is ready
+document.addEventListener('slash-commands:ready', function() {
+    console.log("Slash commands ready, initializing image module commands...");
+    initImageModuleSlashCommands();
+});
+
+// Fallback initialization if the event doesn't fire
 document.addEventListener('DOMContentLoaded', function() {
     setTimeout(function() {
-        if (window.SlashCommands && window.Commands && window.Commands.canvasManager) {
-            console.log("Initializing image module slash commands...");
+        if (window.SlashCommands && 
+            typeof window.SlashCommands.registerModuleCommand === 'function') {
+            console.log("Initializing image module slash commands via fallback...");
             initImageModuleSlashCommands();
         }
     }, 1200);
@@ -19,16 +26,47 @@ document.addEventListener('DOMContentLoaded', function() {
  * Initialize slash commands for the image module.
  */
 function initImageModuleSlashCommands() {
+    // Prevent multiple initialization
+    if (window.imageModuleSlashCommandsInitialized) {
+        return;
+    }
+    
     // Register always-available image activation commands
     registerImageActivationCommands();
     
     // Register module-specific commands (only available when image module is active)
     registerImageModuleCommands();
     
-    // Extend the image module with additional slash command support
+    // Define the module update function - completely overwrite any existing one
+    window.updateImageModule = function(settings) {
+        const imageModule = window.Commands?.canvasManager?.getModule('image');
+        if (!imageModule) {
+            console.error("Image module not found");
+            return;
+        }
+        
+        // Apply settings if provided
+        if (settings?.theme && typeof imageModule.setTheme === 'function') {
+            imageModule.setTheme(settings.theme);
+        }
+        
+        if (settings?.zoom && typeof imageModule.setZoom === 'function') {
+            imageModule.setZoom(settings.zoom);
+        }
+        
+        // Extend with slash commands support
+        extendImageModuleWithSlashSupport();
+        
+        console.log("Image module updated with settings:", settings);
+    };
+    
+    // Extend the image module immediately
     extendImageModuleWithSlashSupport();
     
-    console.log("Image module slash commands initialized");
+    // Set initialization flag
+    window.imageModuleSlashCommandsInitialized = true;
+    
+    console.log("✅ Image module slash commands initialized");
 }
 
 /**
@@ -182,7 +220,7 @@ function extendImageModuleWithSlashSupport() {
         return;
     }
     
-    console.log("Extending image module with additional slash command support");
+    console.log("Extending image module with slash command support");
     
     // Store original handleCommand method
     const originalHandleCommand = imageModule.handleCommand;
@@ -206,50 +244,20 @@ function extendImageModuleWithSlashSupport() {
         }
     };
     
-    // If not already defined, add a helper for category-specific images.
-    if (typeof imageModule.displayRandomCategoryImage !== 'function') {
-        imageModule.displayRandomCategoryImage = function(category) {
-            const width = 600;
-            const height = 400;
-            const url = `https://source.unsplash.com/random/${width}x${height}/?${category}`;
-            if (typeof this.updateImageTitle === 'function') {
-                this.updateImageTitle(`Random ${category} image`);
-            }
-            return (typeof this.displayImage === 'function')
-                ? this.displayImage(url)
-                : this.handleCommand('display', [url]);
-        };
-    }
+    // Add helper for category-specific images
+    imageModule.displayRandomCategoryImage = function(category) {
+        const width = 600;
+        const height = 400;
+        const url = `https://source.unsplash.com/random/${width}x${height}/?${category}`;
+        
+        if (typeof this.updateImageTitle === 'function') {
+            this.updateImageTitle(`Random ${category} image`);
+        }
+        
+        return (typeof this.displayImage === 'function')
+            ? this.displayImage(url)
+            : this.handleCommand('display', [url]);
+    };
     
     imageModule._slashCommandsExtended = true;
-}
-
-/**
- * (Optional) You may expose an update function for the image module,
- * so that when it becomes active, you can extend it with slash commands.
- */
-if (typeof window.updateImageModule === 'function') {
-    const originalUpdateImageModule = window.updateImageModule;
-    window.updateImageModule = function(settings) {
-        if (settings) {
-            originalUpdateImageModule(settings);
-        }
-        extendImageModuleWithSlashSupport();
-    };
-} else {
-    window.updateImageModule = function(settings) {
-        const imageModule = window.Commands && window.Commands.canvasManager
-            ? window.Commands.canvasManager.getModule('image')
-            : null;
-        if (!imageModule) {
-            console.error("Image module not found");
-            return;
-        }
-        if (settings && settings.theme && typeof imageModule.setTheme === 'function') {
-            imageModule.setTheme(settings.theme);
-        }
-        // Extend with slash commands support
-        extendImageModuleWithSlashSupport();
-        console.log("Image module updated with settings:", settings);
-    };
 }

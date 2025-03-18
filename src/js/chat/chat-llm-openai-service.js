@@ -1,12 +1,11 @@
 /**
- * js/chat/openai-integration.js
+ * js/chat/chat-llm-openai-service.js
  * Core OpenAI API Service
  * 
  * This file provides the basic OpenAI service for API integration.
  * It handles API keys, endpoints, and communication with OpenAI.
  */
 
-// OpenAI API Service
 class OpenAIService {
   constructor() {
     // Configuration
@@ -28,65 +27,83 @@ Available commands:
 
 When responding to user requests for visualizations or code, suggest appropriate canvas commands.`;
     this.messageHistory = [];
-    
+
     // Load saved API key and endpoint (if available)
     this.loadSavedApiKey();
     this.loadSavedEndpoint();
-    
+
     // Initialize conversation history with the system prompt
     this.addSystemMessageToHistory();
-    
+
     console.log('[DEBUG] OpenAIService initialized');
+    
+    // Set initialization flag for slash command system to detect
+    window.openAIServiceInitialized = true;
   }
-  
+
   // Validate the API key format (basic check)
   validateApiKey() {
-    return (this.apiKey &&
-            typeof this.apiKey === 'string' &&
-            this.apiKey.startsWith('sk-') &&
-            this.apiKey.length > 30);
+    return (
+      this.apiKey &&
+      typeof this.apiKey === 'string' &&
+      this.apiKey.startsWith('sk-') &&
+      this.apiKey.length > 30
+    );
   }
-  
+
   // Set API key and save it to localStorage
   setApiKey(key) {
     this.apiKey = key;
     try {
       localStorage.setItem('canvas_openai_api_key', key);
-      console.log('[DEBUG] API key saved to localStorage as "canvas_openai_api_key":', key.substring(0, 6) + '...');
+      console.log(
+        '[DEBUG] API key saved to localStorage as "canvas_openai_api_key":',
+        key.substring(0, 6) + '...'
+      );
     } catch (e) {
       console.warn('[DEBUG] Could not save API key to localStorage', e);
     }
-    
-    // Verify the key is valid
     const isValid = this.validateApiKey();
-    
-    // Set the global flag if ChatInterface exists
+    // Update ChatInterface flag if available
     if (isValid && window.ChatInterface) {
       window.ChatInterface.apiKeySet = true;
     }
-    
     // Update status bar if available
     if (typeof updateStatusBarWithAIInfo === 'function') {
       updateStatusBarWithAIInfo(this.model);
     }
     
+    // Dispatch an event that the slash command system can listen for
+    document.dispatchEvent(new CustomEvent('openai:api-key-updated', { 
+      detail: { valid: isValid }
+    }));
+    
     return isValid;
   }
-  
+
   // Load the API key from localStorage
   loadSavedApiKey() {
     try {
       const savedKey = localStorage.getItem('canvas_openai_api_key');
       if (savedKey) {
         this.apiKey = savedKey;
-        console.log('[DEBUG] Loaded API key from localStorage:', savedKey.substring(0, 6) + '...');
-        
-        // Update the ChatInterface status if the key is valid
-        if (this.validateApiKey() && window.ChatInterface) {
+        console.log(
+          '[DEBUG] Loaded API key from localStorage:',
+          savedKey.substring(0, 6) + '...'
+        );
+        // Delay update to allow ChatInterface to initialize
+        if (this.validateApiKey()) {
           setTimeout(() => {
-            window.ChatInterface.apiKeySet = true;
-            console.log('[DEBUG] Updated ChatInterface.apiKeySet to true after loading API key');
-          }, 500); // Short delay to ensure ChatInterface is loaded
+            if (window.ChatInterface) {
+              window.ChatInterface.apiKeySet = true;
+              console.log('[DEBUG] Updated ChatInterface.apiKeySet to true after loading API key');
+            }
+            
+            // Dispatch an event that the slash command system can listen for
+            document.dispatchEvent(new CustomEvent('openai:api-key-loaded', { 
+              detail: { valid: true }
+            }));
+          }, 500);
         }
       } else {
         console.log('[DEBUG] No API key found in localStorage under "canvas_openai_api_key".');
@@ -95,8 +112,8 @@ When responding to user requests for visualizations or code, suggest appropriate
       console.warn('[DEBUG] Could not load API key from localStorage', e);
     }
   }
-  
-  // Set API endpoint
+
+  // Set API endpoint and save it to localStorage
   setApiEndpoint(endpoint) {
     try {
       const url = new URL(endpoint);
@@ -109,13 +126,19 @@ When responding to user requests for visualizations or code, suggest appropriate
       } catch (e) {
         console.warn('Could not save API endpoint to localStorage', e);
       }
+      
+      // Dispatch an event that the slash command system can listen for
+      document.dispatchEvent(new CustomEvent('openai:endpoint-updated', { 
+        detail: { endpoint: endpoint }
+      }));
+      
       return true;
     } catch (e) {
       console.error('Invalid URL format for API endpoint', e);
       return false;
     }
   }
-  
+
   // Load saved API endpoint from localStorage
   loadSavedEndpoint() {
     try {
@@ -129,8 +152,8 @@ When responding to user requests for visualizations or code, suggest appropriate
     }
     return false;
   }
-  
-  // Reset API endpoint to default
+
+  // Reset API endpoint to default and remove from localStorage
   resetApiEndpoint() {
     this.apiEndpoint = 'https://api.openai.com/v1/chat/completions';
     try {
@@ -138,9 +161,13 @@ When responding to user requests for visualizations or code, suggest appropriate
     } catch (e) {
       console.warn('Could not remove API endpoint from localStorage', e);
     }
+    
+    // Dispatch an event that the slash command system can listen for
+    document.dispatchEvent(new CustomEvent('openai:endpoint-reset', {}));
+    
     return true;
   }
-  
+
   // Add the system prompt as the first message in history
   addSystemMessageToHistory() {
     this.messageHistory = [{
@@ -148,18 +175,21 @@ When responding to user requests for visualizations or code, suggest appropriate
       content: this.systemPrompt
     }];
   }
-  
+
   // Update the system prompt and reset conversation history
   updateSystemPrompt(prompt) {
     this.systemPrompt = prompt;
     this.addSystemMessageToHistory();
   }
-  
+
   // Reset conversation history to just the system message
   resetConversation() {
     this.addSystemMessageToHistory();
+    
+    // Dispatch an event that the slash command system can listen for
+    document.dispatchEvent(new CustomEvent('openai:conversation-reset', {}));
   }
-  
+
   // Add a user message to history; limit history to 20 messages
   addUserMessage(message) {
     this.messageHistory.push({ role: 'user', content: message });
@@ -172,12 +202,12 @@ When responding to user requests for visualizations or code, suggest appropriate
       }
     }
   }
-  
+
   // Add an assistant message to history
   addAssistantMessage(message) {
     this.messageHistory.push({ role: 'assistant', content: message });
   }
-  
+
   // Process the user message with OpenAI and return the assistant's response
   async processMessage(userMessage) {
     if (!this.validateApiKey()) {
@@ -212,23 +242,26 @@ When responding to user requests for visualizations or code, suggest appropriate
       return { success: false, message: `Error: ${error.message || 'Failed to connect to OpenAI'}` };
     }
   }
-  
+
   // Change the model if it is one of the allowed options
   setModel(model) {
     const validModels = ['gpt-4o', 'gpt-4o-mini', 'gpt-3.5-turbo'];
     if (validModels.includes(model)) {
       this.model = model;
-      
-      // Update status bar if model changes
       if (typeof updateStatusBarWithAIInfo === 'function' && this.validateApiKey()) {
         updateStatusBarWithAIInfo(model);
       }
+      
+      // Dispatch an event that the slash command system can listen for
+      document.dispatchEvent(new CustomEvent('openai:model-changed', { 
+        detail: { model: model }
+      }));
       
       return true;
     }
     return false;
   }
-  
+
   // Return current settings for display
   getSettings() {
     return {
@@ -241,51 +274,39 @@ When responding to user requests for visualizations or code, suggest appropriate
   }
 }
 
-// Initialize OpenAI service
-document.addEventListener('DOMContentLoaded', function() {
-  // Create a global OpenAI service instance
+// Initialize OpenAI service when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
   window.openAIService = new OpenAIService();
-  
-  // Wait for ChatInterface to be available
+
+  // Wait for ChatInterface to be available, then update API key status
   const waitForChatInterface = setInterval(() => {
     if (window.ChatInterface) {
       clearInterval(waitForChatInterface);
+      // Just set the API key status without initializing the old integration
+      window.ChatInterface.apiKeySet = window.openAIService.validateApiKey();
       
-      // If chat-integration.js is loaded, it will handle the rest
-      // But if not, make sure we have a basic connection at least
-      if (typeof initOpenAIChatIntegration !== 'function') {
-        console.log('No chat integration function found, setting basic API key status');
-        window.ChatInterface.apiKeySet = window.openAIService.validateApiKey();
-      }
+      // Let the system know the chat interface is ready
+      document.dispatchEvent(new CustomEvent('openai:chat-interface-ready', {}));
     }
   }, 100);
 });
 
-// Add a debugging helper function to check the API key persistence
-window.debugOpenAIService = function() {
+// Debug helper function to inspect OpenAI service state
+window.debugOpenAIService = () => {
   console.log("=== OpenAI Service Debug ===");
-  
   if (!window.openAIService) {
     console.error("OpenAI service not initialized yet");
     return;
   }
-  
   console.log("API Key:", window.openAIService.apiKey ? window.openAIService.apiKey.substring(0, 6) + "..." : "Not set");
   console.log("API Key Valid:", window.openAIService.validateApiKey());
-  
   try {
     const storedKey = localStorage.getItem('canvas_openai_api_key');
     console.log("LocalStorage API Key:", storedKey ? storedKey.substring(0, 6) + "..." : "Not found");
   } catch (e) {
     console.error("Cannot access localStorage:", e);
   }
-  
-  if (window.ChatInterface) {
-    console.log("ChatInterface.apiKeySet:", window.ChatInterface.apiKeySet);
-  } else {
-    console.log("ChatInterface not initialized yet");
-  }
-  
+  console.log("ChatInterface.apiKeySet:", window.ChatInterface ? window.ChatInterface.apiKeySet : "Not initialized");
   console.log("Current Model:", window.openAIService.model);
   console.log("API Endpoint:", window.openAIService.apiEndpoint);
   console.log("Message History Length:", window.openAIService.messageHistory.length);

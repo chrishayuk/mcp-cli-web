@@ -1,10 +1,11 @@
 /**
+ * styles/slash-command.css
  * Slash Commands Styling
  * 
  * CSS styles for the slash command system in Terminal Canvas
  */
 
-/* Slash command autocomplete dropdown */
+/* Autocomplete Dropdown */
 .slash-command-autocomplete {
     position: absolute;
     background: #1a1a1a;
@@ -13,14 +14,13 @@
     max-height: 200px;
     overflow-y: auto;
     z-index: 1000;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-    /* Remove any transform or negative margins */
+    box-shadow: 0 4px 12px rgb(0 0 0 / 50%);
     animation: glow 1.5s infinite alternate;
     font-family: 'Courier New', monospace;
-}
-
-/* Command item in autocomplete dropdown */
-.slash-command-item {
+  }
+  
+  /* Command Item */
+  .slash-command-item {
     padding: 8px 12px;
     cursor: pointer;
     display: flex;
@@ -28,24 +28,23 @@
     align-items: center;
     border-bottom: 1px solid #333;
     transition: background-color 0.2s;
-}
-
-/* Hover and selected states */
-.slash-command-item:hover, 
-.slash-command-item.selected {
+  }
+  
+  .slash-command-item:hover,
+  .slash-command-item.selected {
     background: #2a2a2a;
-    text-shadow: 0 0 5px rgba(0, 255, 0, 0.7);
-}
-
-/* Command name styling */
-.slash-command-name {
+    text-shadow: 0 0 5px rgb(0 255 0 / 70%);
+  }
+  
+  /* Command Name */
+  .slash-command-name {
     font-weight: bold;
     color: #0f0;
-    text-shadow: 0 0 3px rgba(0, 255, 0, 0.5);
-}
-
-/* Command description styling */
-.slash-command-desc {
+    text-shadow: 0 0 3px rgb(0 255 0 / 50%);
+  }
+  
+  /* Command Description */
+  .slash-command-desc {
     color: #aaa;
     font-size: 0.9em;
     margin-left: 10px;
@@ -53,10 +52,10 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-}
-
-/* Slash command button styling */
-.slash-command-button {
+  }
+  
+  /* Slash Command Button */
+  .slash-command-button {
     background: transparent;
     border: none;
     color: #ddd;
@@ -66,61 +65,60 @@
     display: flex;
     align-items: center;
     justify-content: center;
-}
-
-/* Slash command button hover state */
-.slash-command-button:hover {
+  }
+  
+  .slash-command-button:hover {
     color: #0f0;
     transform: scale(1.1);
-}
-
-/* Icon in slash command button */
-.slash-command-button i {
+  }
+  
+  .slash-command-button i {
     font-size: 14px;
-}
-
-/* Active state for chat input when slash command is active */
-.chat-input.slash-active {
+  }
+  
+  /* Active Chat Input State */
+  .chat-input.slash-active {
     border-color: #0f0;
-    box-shadow: 0 0 5px rgba(0, 255, 0, 0.5);
-}
-
-/* Glow animation for terminal effect */
-@keyframes glow {
+    box-shadow: 0 0 5px rgb(0 255 0 / 50%);
+  }
+  
+  /* Glow Animation */
+  @keyframes glow {
     from {
-        box-shadow: 0 0 5px rgba(0, 255, 0, 0.5);
+      box-shadow: 0 0 5px rgb(0 255 0 / 50%);
     }
+
     to {
-        box-shadow: 0 0 10px rgba(0, 255, 0, 0.7);
+      box-shadow: 0 0 10px rgb(0 255 0 / 70%);
     }
-}
-
-/* Scrollbar styling */
-.slash-command-autocomplete::-webkit-scrollbar {
+  }
+  
+  /* Scrollbar Styling */
+  .slash-command-autocomplete::-webkit-scrollbar {
     width: 6px;
-}
-
-.slash-command-autocomplete::-webkit-scrollbar-track {
+  }
+  
+  .slash-command-autocomplete::-webkit-scrollbar-track {
     background: #1a1a1a;
-}
-
-.slash-command-autocomplete::-webkit-scrollbar-thumb {
+  }
+  
+  .slash-command-autocomplete::-webkit-scrollbar-thumb {
     background: #444;
     border-radius: 3px;
-}
-
-/* Category header in autocomplete dropdown */
-.slash-command-category {
+  }
+  
+  /* Category Header */
+  .slash-command-category {
     padding: 4px 8px;
     background: #222;
     color: #0f0;
     font-size: 0.8em;
     text-transform: uppercase;
     letter-spacing: 1px;
-}
-
-/* Command example styling in help messages */
-.slash-command-example {
+  }
+  
+  /* Command Example in Help Messages */
+  .slash-command-example {
     display: inline-block;
     background: #2a2a2a;
     color: #0f0;
@@ -128,23 +126,20 @@
     padding: 2px 6px;
     margin: 2px 0;
     font-family: monospace;
-}
-
-/* Scanline effect for terminal aesthetic */
-.slash-command-autocomplete::before {
+  }
+  
+  /* Scanline Effect for Terminal Aesthetic */
+  .slash-command-autocomplete::before {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    inset: 0;
     background: linear-gradient(
-        to bottom,
-        transparent 50%,
-        rgba(0, 0, 0, 0.1) 50%
+      to bottom,
+      transparent 50%,
+      rgb(0 0 0 / 10%) 50%
     );
     background-size: 100% 4px;
     pointer-events: none;
     z-index: 1;
     opacity: 0.3;
-}
+  }  
