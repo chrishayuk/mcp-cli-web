@@ -8,13 +8,34 @@
 
 // Initialize when document is loaded
 document.addEventListener('DOMContentLoaded', function() {
-    // Wait for slash command handler and OpenAI service to be initialized
-    setTimeout(function() {
+    console.log("OpenAI slash commands: script loaded");
+    
+    // Register an event listener for when slash commands are ready
+    document.addEventListener('slash-commands:ready', function() {
+        console.log("OpenAI slash commands: slash-commands:ready event detected");
         if (window.SlashCommands && window.openAIService) {
-            console.log("Initializing OpenAI slash commands...");
             initOpenAISlashCommands();
         }
-    }, 1200);
+    });
+    
+    // Also listen for application ready event
+    document.addEventListener('canvas-terminal:ready', function() {
+        console.log("OpenAI slash commands: canvas-terminal:ready event detected");
+        if (window.SlashCommands && window.openAIService && !window.aiSlashCommandsInitialized) {
+            initOpenAISlashCommands();
+        }
+    });
+    
+    // Wait a short time to check if dependencies are already available
+    setTimeout(function() {
+        if (window.SlashCommands && window.openAIService && !window.aiSlashCommandsInitialized) {
+            console.log("OpenAI slash commands: Dependencies available, initializing immediately");
+            initOpenAISlashCommands();
+        } else {
+            console.log("OpenAI slash commands: Waiting for events, current state: SlashCommands=" + 
+                        !!window.SlashCommands + ", openAIService=" + !!window.openAIService);
+        }
+    }, 500);
 });
 
 /**
@@ -27,47 +48,78 @@ function initOpenAISlashCommands() {
         return;
     }
     
-    // Register AI slash commands
-    registerAISlashCommands();
+    console.log("Initializing OpenAI slash commands...");
     
-    // Extend OpenAI integration with slash command support
-    extendOpenAIIntegration();
-    
-    // Set initialization flag
-    window.aiSlashCommandsInitialized = true;
-    window.aiCommandsInitialized = true;
-    
-    console.log("✅ OpenAI slash commands initialized");
+    try {
+        // Register AI slash commands
+        registerAISlashCommands();
+        
+        // Extend OpenAI integration with slash command support
+        extendOpenAIIntegration();
+        
+        // Set initialization flag - make sure it's on the global window object
+        window.aiSlashCommandsInitialized = true;
+        window.aiCommandsInitialized = true;
+        
+        // Export functions to the global scope
+        window.handleAICommand = handleAICommand;
+        window.processWithOpenAI = processWithOpenAI;
+        window.showAIHelp = showAIHelp;
+        window.showAISettings = showAISettings;
+        
+        console.log("✅ OpenAI slash commands initialized");
+        
+        // Register with application initialization system if available
+        if (window.AppInit && typeof window.AppInit.register === 'function') {
+            window.AppInit.register('aiCommands');
+        }
+        
+        // Dispatch event that initialization is complete
+        document.dispatchEvent(new CustomEvent('openai-commands:ready'));
+    } catch (error) {
+        console.error("Error initializing OpenAI slash commands:", error);
+    }
 }
 
 /**
  * Register AI slash commands
  */
 function registerAISlashCommands() {
-    // Create a virtual 'ai' module for command organization
-    window.SlashCommands.registerModuleCommand(
-        'ai', '/ai', 'ai help', 'Manage AI assistant settings', true
-    );
-    
-    // Register AI configuration commands
-    const aiCommands = [
-        { cmd: '/ai-key', fullCmd: 'ai key', desc: 'Set your OpenAI API key' },
-        { cmd: '/ai-model', fullCmd: 'ai model', desc: 'Set AI model (gpt-4o, gpt-4o-mini, gpt-3.5-turbo)' },
-        { cmd: '/ai-endpoint', fullCmd: 'ai endpoint', desc: 'Set custom API endpoint URL' },
-        { cmd: '/ai-reset-endpoint', fullCmd: 'ai reset-endpoint', desc: 'Reset API endpoint to default' },
-        { cmd: '/ai-clear', fullCmd: 'ai clear', desc: 'Clear conversation history' },
-        { cmd: '/ai-settings', fullCmd: 'ai settings', desc: 'Show current AI settings' },
-        { cmd: '/ai-help', fullCmd: 'ai help', desc: 'Show AI help message' }
-    ];
-    
-    // Register each command with the AI module
-    aiCommands.forEach(command => {
+    try {
+        // Create a virtual 'ai' module for command organization
         window.SlashCommands.registerModuleCommand(
-            'ai', command.cmd, command.fullCmd, command.desc, true
+            'ai', '/ai', 'ai help', 'Manage AI assistant settings', true
         );
-    });
-    
-    console.log("OpenAI slash commands registered");
+        
+        // Register AI configuration commands
+        const aiCommands = [
+            { cmd: '/ai-key', fullCmd: 'ai key', desc: 'Set your OpenAI API key' },
+            { cmd: '/ai-model', fullCmd: 'ai model', desc: 'Set AI model (gpt-4o, gpt-4o-mini, gpt-3.5-turbo)' },
+            { cmd: '/ai-endpoint', fullCmd: 'ai endpoint', desc: 'Set custom API endpoint URL' },
+            { cmd: '/ai-reset-endpoint', fullCmd: 'ai reset-endpoint', desc: 'Reset API endpoint to default' },
+            { cmd: '/ai-clear', fullCmd: 'ai clear', desc: 'Clear conversation history' },
+            { cmd: '/ai-settings', fullCmd: 'ai settings', desc: 'Show current AI settings' },
+            { cmd: '/ai-help', fullCmd: 'ai help', desc: 'Show AI help message' }
+        ];
+        
+        // Register each command with the AI module
+        aiCommands.forEach(command => {
+            window.SlashCommands.registerModuleCommand(
+                'ai', command.cmd, command.fullCmd, command.desc, true
+            );
+        });
+        
+        console.log("OpenAI slash commands registered:", aiCommands.length);
+        
+        // Force update available commands cache if method exists
+        if (typeof window.SlashCommands.getAvailableCommands === 'function') {
+            const available = window.SlashCommands.getAvailableCommands();
+            console.log("Available commands after AI registration:", Object.keys(available).length);
+        }
+    } catch (error) {
+        console.error("Error registering AI slash commands:", error);
+        throw error; // Re-throw to prevent silent failures
+    }
 }
 
 /**
@@ -77,62 +129,73 @@ function extendOpenAIIntegration() {
     // Check if ChatInterface exists
     if (!window.ChatInterface) {
         console.error("ChatInterface not available for OpenAI slash command integration");
-        return;
+        throw new Error("ChatInterface not available"); // Throw error to prevent silent failures
     }
     
-    // Store original sendMessage if not already extended
-    if (!window.ChatInterface._originalAISendMessage && window.ChatInterface.sendMessage) {
-        window.ChatInterface._originalAISendMessage = window.ChatInterface.sendMessage;
+    // First, make sure ChatInterface has a handleCommand function
+    if (typeof window.ChatInterface.handleCommand !== 'function') {
+        console.log("Creating handleCommand function on ChatInterface");
         
-        // Replace with our AI-aware version
-        window.ChatInterface.sendMessage = function() {
-            const message = this.chatInput.value.trim();
-            if (message === '') return;
+        window.ChatInterface.handleCommand = function(command) {
+            console.log("Processing command:", command);
             
-            console.log("Processing message:", message);
-            
-            // Add user message to chat and clear input
-            this.addUserMessage(message);
-            this.chatInput.value = '';
-            this.chatInput.style.height = '';
-            
-            // Handle AI commands separately
-            if (message.startsWith('/ai ') || message.startsWith('ai ')) {
-                handleAICommand(message, this);
+            // Special handling for AI commands
+            if (command.startsWith('/ai') || command === 'ai help') {
+                handleAICommand(command, this);
                 return;
             }
             
             // Check if message is a direct command for a module
-            const isDirectCommand = message.startsWith('show ') ||
-                message.startsWith('chart ') ||
-                message.startsWith('draw ') ||
-                message.startsWith('connect ') ||
-                message.startsWith('help') ||
-                message.startsWith('clear ') ||
-                (message.startsWith('/') && !message.startsWith('/ai '));
+            const isDirectCommand = command.startsWith('show ') ||
+                command.startsWith('chart ') ||
+                command.startsWith('draw ') ||
+                command.startsWith('connect ') ||
+                command.startsWith('help') ||
+                command.startsWith('clear ') ||
+                (command.startsWith('/') && !command.startsWith('/ai'));
             
             // Process message based on type
-            if (isDirectCommand) {
+            if (isDirectCommand && window.Commands) {
                 console.log("Processing as direct command");
-                this.processCommand(message);
+                window.Commands.processCommand(command);
             } else if (!window.openAIService.validateApiKey()) {
                 console.log("No API key set, showing help message");
                 this.addSystemMessage("⚠️ Please set your OpenAI API key with '/ai key YOUR_API_KEY' to chat with AI.");
             } else {
                 console.log("Processing with OpenAI API");
-                processWithOpenAI(message, this);
+                processWithOpenAI(command, this);
             }
         };
+    } else {
+        // If handleCommand already exists, patch it to handle AI commands
+        const originalHandleCommand = window.ChatInterface.handleCommand;
         
-        console.log("Extended ChatInterface for OpenAI slash command support");
-        
-        // Add processWithOpenAI to ChatInterface if not already present
-        if (typeof window.ChatInterface.processWithOpenAI !== 'function') {
-            window.ChatInterface.processWithOpenAI = function(message) {
-                processWithOpenAI(message, this);
+        // Only patch if not already patched
+        if (!window.ChatInterface._handlesAiCommands) {
+            window.ChatInterface.handleCommand = function(command) {
+                if (command.startsWith('/ai') || command === 'ai help') {
+                    handleAICommand(command, this);
+                    return;
+                }
+                
+                // Call original handler for other commands
+                originalHandleCommand.call(this, command);
             };
+            
+            window.ChatInterface._handlesAiCommands = true;
+            console.log("Patched existing ChatInterface.handleCommand for AI commands");
         }
     }
+    
+    // Add processWithOpenAI to ChatInterface if not already present
+    if (typeof window.ChatInterface.processWithOpenAI !== 'function') {
+        window.ChatInterface.processWithOpenAI = function(message) {
+            processWithOpenAI(message, this);
+        };
+        console.log("Added processWithOpenAI method to ChatInterface");
+    }
+    
+    console.log("Successfully extended ChatInterface with OpenAI support");
 }
 
 /**
@@ -193,6 +256,8 @@ function checkAndExecuteCommands(responseText, chatInterface) {
  * @param {Object} chatInterface - The chat interface instance
  */
 function handleAICommand(command, chatInterface) {
+    console.log("Handling AI command:", command);
+    
     // Strip leading slash if present
     if (command.startsWith('/')) {
         command = command.substring(1);
@@ -201,6 +266,8 @@ function handleAICommand(command, chatInterface) {
     const parts = command.split(' ');
     const cmd = parts[0].toLowerCase();
     const subCommand = parts.length > 1 ? parts[1].toLowerCase() : '';
+    
+    console.log(`Parsed AI command - cmd: ${cmd}, subCommand: ${subCommand}`);
     
     // Handle various AI commands
     switch (subCommand) {
@@ -396,3 +463,42 @@ function showAIHelp(chatInterface) {
         if (messageText) messageText.innerHTML = messageHTML;
     }
 }
+
+// Provide a force initialization function for emergency fixes
+window.forceInitOpenAICommands = function() {
+    console.log("🔧 Forcing OpenAI slash command initialization");
+    
+    // Create or get SlashCommands object
+    if (!window.SlashCommands) {
+        console.error("SlashCommands not available");
+        return false;
+    }
+    
+    // Force initialization
+    try {
+        registerAISlashCommands();
+        extendOpenAIIntegration();
+        
+        // Make functions globally available
+        window.handleAICommand = handleAICommand;
+        window.processWithOpenAI = processWithOpenAI;
+        window.showAIHelp = showAIHelp;
+        window.showAISettings = showAISettings;
+        
+        // Set flags
+        window.aiSlashCommandsInitialized = true;
+        window.aiCommandsInitialized = true;
+        
+        console.log("✅ OpenAI slash commands forcefully initialized");
+        
+        // Register with application initialization system if available
+        if (window.AppInit && typeof window.AppInit.register === 'function') {
+            window.AppInit.register('aiCommands');
+        }
+        
+        return true;
+    } catch (error) {
+        console.error("Error during forced initialization:", error);
+        return false;
+    }
+};

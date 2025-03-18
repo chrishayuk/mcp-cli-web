@@ -72,6 +72,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     /**
      * Initialize the OpenAI commands
+     * FIXED: Added proper dependency checking, error handling, and verification
      */
     function initAICommands() {
         if (!initState.core || !initState.connector) {
@@ -79,13 +80,224 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
+        // Check if the OpenAI service is available - this is the key dependency
+        if (!window.openAIService) {
+            console.log("OpenAI service not available yet, deferring AI commands initialization");
+            
+            // Set up a listener for when OpenAI service becomes available
+            if (!window._openAIServiceWatcher) {
+                window._openAIServiceWatcher = setInterval(function() {
+                    if (window.openAIService) {
+                        clearInterval(window._openAIServiceWatcher);
+                        console.log("OpenAI service now available, retrying AI commands initialization");
+                        initAICommands();
+                    }
+                }, 200);
+                
+                // Timeout after 10 seconds
+                setTimeout(function() {
+                    if (window._openAIServiceWatcher) {
+                        clearInterval(window._openAIServiceWatcher);
+                        console.warn("Timeout waiting for OpenAI service");
+                    }
+                }, 10000);
+            }
+            return;
+        }
+        
         if (typeof initOpenAISlashCommands === 'function') {
-            initOpenAISlashCommands();
-            initState.aiCommands = window.aiSlashCommandsInitialized || true;
-            console.log("✅ OpenAI slash commands initialized");
-            checkDependencies();
+            try {
+                console.log("Starting OpenAI slash commands initialization...");
+                initOpenAISlashCommands();
+                
+                // Verify initialization was successful by checking flag
+                if (window.aiSlashCommandsInitialized) {
+                    initState.aiCommands = true;
+                    console.log("✅ OpenAI slash commands initialized successfully");
+                } else {
+                    console.warn("OpenAI slash commands initialization did not set success flag");
+                    
+                    // If the function exists but initialization didn't set the flag, 
+                    // let's create an emergency implementation
+                    initEmergencyAICommands();
+                }
+                
+                checkDependencies();
+            } catch (error) {
+                console.error("Error initializing OpenAI slash commands:", error);
+                // Fall back to emergency implementation
+                initEmergencyAICommands();
+                checkDependencies();
+            }
         } else {
             console.error("initOpenAISlashCommands function not available");
+            // Create an emergency implementation
+            initEmergencyAICommands();
+            checkDependencies();
+        }
+    }
+    
+    /**
+     * Emergency AI commands initialization if the normal method fails
+     * NEW: Added as a fallback if regular initialization fails
+     */
+    function initEmergencyAICommands() {
+        console.log("Starting emergency AI commands initialization...");
+        
+        try {
+            // Check if we actually need to do this
+            if (window.aiSlashCommandsInitialized) {
+                console.log("AI commands already initialized, skipping emergency init");
+                initState.aiCommands = true;
+                return;
+            }
+            
+            // Make sure we have the dependencies
+            if (!window.SlashCommands || !window.openAIService) {
+                console.error("Missing dependencies for emergency AI commands init");
+                return;
+            }
+            
+            // Register basic AI module commands
+            window.SlashCommands.registerModuleCommand(
+                'ai', '/ai', 'ai help', 'Manage AI assistant settings', true
+            );
+            
+            // Register core AI commands
+            const aiCommands = [
+                { cmd: '/ai-key', fullCmd: 'ai key', desc: 'Set your OpenAI API key' },
+                { cmd: '/ai-model', fullCmd: 'ai model', desc: 'Set AI model (gpt-4o, gpt-4o-mini, gpt-3.5-turbo)' },
+                { cmd: '/ai-clear', fullCmd: 'ai clear', desc: 'Clear conversation history' },
+                { cmd: '/ai-help', fullCmd: 'ai help', desc: 'Show AI help message' }
+            ];
+            
+            aiCommands.forEach(command => {
+                window.SlashCommands.registerModuleCommand(
+                    'ai', command.cmd, command.fullCmd, command.desc, true
+                );
+            });
+            
+            // Create and register the handler function
+            window.handleAICommand = function(command, chatInterface) {
+                console.log("Handling AI command:", command);
+                
+                // Strip leading slash if present
+                if (command.startsWith('/')) {
+                    command = command.substring(1);
+                }
+                
+                const parts = command.split(' ');
+                const subCommand = parts.length > 1 ? parts[1].toLowerCase() : 'help';
+                
+                switch (subCommand) {
+                    case 'key':
+                        if (parts.length > 2) {
+                            const apiKey = parts.slice(2).join(' ');
+                            const result = window.openAIService.setApiKey(apiKey);
+                            if (result) {
+                                chatInterface.apiKeySet = true;
+                                window.ChatInterface.apiKeySet = true;
+                                chatInterface.addSystemMessage('✅ API key set successfully! Your key is stored in your browser.');
+                            } else {
+                                chatInterface.addSystemMessage('⚠️ Invalid API key format. Please ensure it starts with "sk-".');
+                            }
+                        } else {
+                            chatInterface.addSystemMessage("⚠️ Please provide an API key after the command, e.g., '/ai key YOUR_API_KEY'");
+                        }
+                        break;
+                        
+                    case 'model':
+                        if (parts.length > 2) {
+                            const model = parts[2];
+                            const result = window.openAIService.setModel(model);
+                            chatInterface.addSystemMessage(result
+                                ? `✅ Model changed to "${model}".`
+                                : '⚠️ Invalid model name. Available models: gpt-4o, gpt-4o-mini, gpt-3.5-turbo');
+                        } else {
+                            chatInterface.addSystemMessage("⚠️ Please specify a model (e.g., 'gpt-4o', 'gpt-4o-mini', 'gpt-3.5-turbo')");
+                        }
+                        break;
+                        
+                    case 'clear':
+                        window.openAIService.resetConversation();
+                        chatInterface.addSystemMessage('✅ Conversation history cleared. Starting fresh conversation.');
+                        break;
+                        
+                    case 'help':
+                    default:
+                        // Show AI help
+                        const messageHTML = `
+<div class="ai-help-display">
+  <div class="help-title">🤖 OpenAI Integration Commands</div>
+  <div class="help-section">
+    <div class="help-subtitle">Configuration:</div>
+    <div class="command-list">
+      <div class="command-item">
+        <div class="command">/ai key YOUR_KEY</div>
+        <div class="description">Set your OpenAI API key</div>
+      </div>
+      <div class="command-item">
+        <div class="command">/ai model MODEL_NAME</div>
+        <div class="description">Change model (gpt-4o, gpt-4o-mini, gpt-3.5-turbo)</div>
+      </div>
+    </div>
+  </div>
+  <div class="help-section">
+    <div class="help-subtitle">Conversation:</div>
+    <div class="command-list">
+      <div class="command-item">
+        <div class="command">/ai clear</div>
+        <div class="description">Clear conversation history</div>
+      </div>
+      <div class="command-item">
+        <div class="command">/ai help</div>
+        <div class="description">Show this help message</div>
+      </div>
+    </div>
+  </div>
+  <div class="help-footer">
+    To chat with AI, simply type your message after setting your API key.<br>
+    To use direct commands (e.g., "show image", "chart pie"), type them normally.
+  </div>
+</div>`;
+                        const systemMessage = chatInterface.addSystemMessage(messageHTML);
+                        if (systemMessage) {
+                            const messageText = systemMessage.querySelector('.message-text');
+                            if (messageText) messageText.innerHTML = messageHTML;
+                        }
+                        break;
+                }
+            };
+            
+            // Fix the ChatInterface to handle AI commands
+            if (window.ChatInterface && window.ChatInterface.handleCommand) {
+                const originalHandleCommand = window.ChatInterface.handleCommand;
+                
+                // Only patch if not already patched
+                if (!window.ChatInterface._handlesAiCommands) {
+                    window.ChatInterface.handleCommand = function(command) {
+                        if (command.startsWith('/ai') || command === 'ai help') {
+                            window.handleAICommand(command, this);
+                            return;
+                        }
+                        
+                        // Call original handler for other commands
+                        originalHandleCommand.call(this, command);
+                    };
+                    
+                    window.ChatInterface._handlesAiCommands = true;
+                    console.log("Patched ChatInterface.handleCommand for AI commands");
+                }
+            }
+            
+            // Set the initialization flags
+            window.aiSlashCommandsInitialized = true;
+            window.aiCommandsInitialized = true;
+            initState.aiCommands = true;
+            
+            console.log("✅ Emergency AI commands initialization successful");
+        } catch (error) {
+            console.error("Emergency AI commands initialization failed:", error);
         }
     }
     
@@ -171,6 +383,24 @@ document.addEventListener('DOMContentLoaded', function() {
                             setupEmergencyUI();
                         }
                         initState.ui = true;
+                    }
+                    
+                    // NEW: Force AI commands initialization if it's still not done
+                    if (!window.aiSlashCommandsInitialized && window.SlashCommands && window.openAIService) {
+                        console.log("Forcing emergency AI commands initialization");
+                        initEmergencyAICommands();
+                    }
+                    
+                    // Check one last time and dispatch the ready event if all core components are ready
+                    initState.aiCommands = window.aiSlashCommandsInitialized || initState.aiCommands;
+                    if (initState.core && initState.ui && initState.connector && initState.aiCommands) {
+                        console.log("✅ All slash command components initialized after emergency fixes");
+                        document.dispatchEvent(new CustomEvent('slash-commands:ready'));
+                        
+                        if (window.AppInit && typeof window.AppInit.register === 'function') {
+                            window.AppInit.register('slashCommands');
+                            window.AppInit.register('aiCommands');
+                        }
                     }
                 } else {
                     console.log("✅ All slash command components initialized after retry");
